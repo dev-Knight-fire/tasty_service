@@ -1,0 +1,7 @@
+[
+  {
+    "origin": ["https://senior-link-ujdh.vercel.app"],
+    "method": ["GET", "POST", "PUT", "DELETE"],
+    "maxAgeSeconds": 3600
+  }
+]
