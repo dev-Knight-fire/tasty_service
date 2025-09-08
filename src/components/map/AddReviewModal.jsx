@@ -6,10 +6,14 @@ import React, { useState } from "react";
 import { FaTimes, FaStar, FaCamera, FaMapMarkerAlt } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext"; // Assuming you have an auth context
 
-const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
+const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => {
   const { user } = useAuth(); // Get current user
+  
+  // Determine if this is for an existing restaurant or a new place
+  const isExistingRestaurant = !!restaurant?.id;
+  
   const [formData, setFormData] = useState({
-    venueName: "",
+    venueName: restaurant?.venueName || "", // Pre-fill with restaurant name if available
     visitDate: new Date().toISOString().split('T')[0], // Default to today
     ratings: {
       food: 0,
@@ -24,6 +28,16 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update form data when restaurant changes
+  React.useEffect(() => {
+    if (restaurant?.venueName) {
+      setFormData(prev => ({
+        ...prev,
+        venueName: restaurant.venueName
+      }));
+    }
+  }, [restaurant?.venueName]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -138,20 +152,26 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
         photoUrls = await uploadPhotos(formData.photos);
       }
 
-      // 2. Save place to places collection
-      const placeData = {
-        lat: location.lat,
-        lng: location.lng,
-        venueName: formData.venueName.trim(),
-        createdAt: serverTimestamp(),
-        owner: user.uid
-      };
-
-      const placeId = await savePlace(placeData);
+      // 2. Save place to places collection (only if it's a new place)
+      let placeId;
+      if (isExistingRestaurant) {
+        // If we have a restaurant ID, use it (existing place)
+        placeId = restaurant.id;
+      } else {
+        // If no restaurant ID, create a new place
+        const placeData = {
+          lat: location.lat,
+          lng: location.lng,
+          venueName: formData.venueName.trim(),
+          createdAt: serverTimestamp(),
+          owner: ""
+        };
+        placeId = await savePlace(placeData);
+      }
 
       // 3. Save review to reviews collection
       const reviewData = {
-        userId: user.uid,
+        userId: user.username,
         placeId: placeId,
         ratings: formData.ratings,
         comment: formData.comment.trim(),
@@ -166,7 +186,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
       onSubmit({
         placeId,
         reviewId,
-        place: placeData,
+        place: isExistingRestaurant ? restaurant : { id: placeId, ...formData },
         review: reviewData
       });
 
@@ -218,7 +238,9 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">Add Review</h2>
+          <h2 className="text-2xl font-bold text-gray-800">
+            {isExistingRestaurant ? "Add Review" : "Add Place & Review"}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -229,6 +251,39 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Restaurant Name Display (for existing restaurants) */}
+          {isExistingRestaurant && restaurant?.venueName && (
+            <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
+              <FaMapMarkerAlt className="text-blue-500" />
+              <span className="text-sm font-medium text-blue-800">
+                {restaurant.venueName}
+              </span>
+            </div>
+          )}
+
+          {/* Venue Name Input (for new places only) */}
+          {!isExistingRestaurant && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Venue Name *
+              </label>
+              <input
+                type="text"
+                name="venueName"
+                value={formData.venueName}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.venueName ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="Enter venue name"
+                disabled={isSubmitting}
+              />
+              {errors.venueName && (
+                <p className="text-red-500 text-sm mt-1">{errors.venueName}</p>
+              )}
+            </div>
+          )}
+
           {location && (
             <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
               <FaMapMarkerAlt className="text-red-500" />
@@ -237,45 +292,6 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
               </span>
             </div>
           )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Venue Name *
-            </label>
-            <input
-              type="text"
-              name="venueName"
-              value={formData.venueName}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.venueName ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Enter venue name"
-              disabled={isSubmitting}
-            />
-            {errors.venueName && (
-              <p className="text-red-500 text-sm mt-1">{errors.venueName}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Visit Date *
-            </label>
-            <input
-              type="date"
-              name="visitDate"
-              value={formData.visitDate}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.visitDate ? "border-red-500" : "border-gray-300"
-              }`}
-              disabled={isSubmitting}
-            />
-            {errors.visitDate && (
-              <p className="text-red-500 text-sm mt-1">{errors.visitDate}</p>
-            )}
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">

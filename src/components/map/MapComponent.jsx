@@ -242,6 +242,7 @@ export default function MapComponent({ category }) {
         // Get location first
         try {
           const location = await getUserLocationByIP();
+          console.log('User location:', location);
           markUserLocation(location);
           // Center map on user location
           map.current.flyTo({
@@ -324,6 +325,7 @@ export default function MapComponent({ category }) {
   const handleAddReviewFromRestaurant = (place) => {
     setShowRestaurantModal(false);
     setSelectedLocation({ lng: place.lng, lat: place.lat });
+    setSelectedRestaurant(place); // Set the selected restaurant
     setShowAddReviewModal(true);
   };
 
@@ -527,12 +529,14 @@ export default function MapComponent({ category }) {
           onClose={() => {
             setShowAddReviewModal(false);
             setIsAddingReview(false);
+            setSelectedRestaurant(null); // Clear selected restaurant
             if (reviewMarkerRef.current) {
               reviewMarkerRef.current.remove();
               reviewMarkerRef.current = null;
             }
           }}
           location={selectedLocation}
+          restaurant={selectedRestaurant} // Pass the selected restaurant data
           onSubmit={handleReviewSubmit}
         />
       )}

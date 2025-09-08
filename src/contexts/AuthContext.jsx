@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }) => {
           setList: listSnap?.data().email ? true : false, // default to false if not set
           role: userData.role || "", // default to empty string if not set
           status: userData.status || "", // default status
+          username: userData.username || "", // default username
           avatar: listSnap ? listSnap.data().photos[listSnap.data().avatar]: "", // default avatar if not set
           isAdmin: userData.isAdministrator || false // default isAdmin
         });

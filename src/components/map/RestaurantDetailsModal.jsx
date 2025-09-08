@@ -7,7 +7,6 @@ import { FaTimes, FaStar, FaMapMarkerAlt, FaUtensils, FaPlus, FaUser, FaCalendar
 const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [averageRating, setAverageRating] = useState(0);
   const [debugInfo, setDebugInfo] = useState('');
 
   // Fetch reviews for this restaurant
@@ -105,19 +104,6 @@ const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
           setDebugInfo(`Found ${reviewsData.length} reviews with placeId: ${restaurant.id}`);
         }
         
-        // Calculate average rating
-        if (reviewsData.length > 0) {
-          const totalRatings = reviewsData.reduce((sum, review) => {
-            const ratings = review.ratings;
-            const avgRating = (ratings.food + ratings.cleanliness + ratings.service + 
-                             ratings.valueForMoney + ratings.wouldReturn) / 5;
-            return sum + avgRating;
-          }, 0);
-          setAverageRating(totalRatings / reviewsData.length);
-        } else {
-          setAverageRating(0);
-        }
-        
       } catch (error) {
         console.error("Error fetching reviews:", error);
         console.error("Error details:", error.message);
@@ -139,7 +125,7 @@ const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
   const formatDate = (timestamp) => {
     if (!timestamp) return 'Unknown date';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString();
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
   const renderStars = (rating) => {
@@ -156,12 +142,6 @@ const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
         <span className="text-sm text-gray-600 ml-1">({rating.toFixed(1)})</span>
       </div>
     );
-  };
-
-  const getCategoryRating = (category, reviews) => {
-    if (reviews.length === 0) return 0;
-    const total = reviews.reduce((sum, review) => sum + (review.ratings[category] || 0), 0);
-    return total / reviews.length;
   };
 
   return (
@@ -212,48 +192,6 @@ const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
             </div>
           </div>
 
-          {/* Average Rating */}
-          {reviews.length > 0 && (
-            <div className="bg-yellow-50 rounded-lg p-4">
-              <h4 className="text-lg font-semibold text-gray-800 mb-3">Overall Rating</h4>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  {renderStars(averageRating)}
-                  <span className="text-2xl font-bold text-gray-800">
-                    {averageRating.toFixed(1)}/5.0
-                  </span>
-                </div>
-                <span className="text-sm text-gray-600">
-                  Based on {reviews.length} review{reviews.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              
-              {/* Category Ratings */}
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">Food</div>
-                  {renderStars(getCategoryRating('food', reviews))}
-                </div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">Cleanliness</div>
-                  {renderStars(getCategoryRating('cleanliness', reviews))}
-                </div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">Service</div>
-                  {renderStars(getCategoryRating('service', reviews))}
-                </div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">Value</div>
-                  {renderStars(getCategoryRating('valueForMoney', reviews))}
-                </div>
-                <div className="text-center">
-                  <div className="text-sm text-gray-600 mb-1">Would Return</div>
-                  {renderStars(getCategoryRating('wouldReturn', reviews))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Reviews Section */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -287,6 +225,7 @@ const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
             ) : (
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {reviews.map((review) => {
+                  // Calculate average rating from the 5 individual scores
                   const reviewAvgRating = (review.ratings.food + review.ratings.cleanliness + 
                                           review.ratings.service + review.ratings.valueForMoney + 
                                           review.ratings.wouldReturn) / 5;
@@ -299,9 +238,9 @@ const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
                             <FaUser className="w-4 h-4 text-gray-600" />
                           </div>
                           <div>
-                            <div className="font-medium text-gray-800">User {review.userId?.slice(-6)}</div>
+                            <div className="font-medium text-gray-800">{review.userId}</div>
                             <div className="text-sm text-gray-500">
-                              {formatDate(review.visitDate)}
+                              {formatDate(review.createdAt)}
                             </div>
                           </div>
                         </div>
@@ -327,30 +266,6 @@ const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
                           ))}
                         </div>
                       )}
-
-                      {/* Individual Ratings */}
-                      <div className="grid grid-cols-5 gap-2 text-xs">
-                        <div className="text-center">
-                          <div className="text-gray-600">Food</div>
-                          <div className="font-medium">{review.ratings.food}/5</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-gray-600">Clean</div>
-                          <div className="font-medium">{review.ratings.cleanliness}/5</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-gray-600">Service</div>
-                          <div className="font-medium">{review.ratings.service}/5</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-gray-600">Value</div>
-                          <div className="font-medium">{review.ratings.valueForMoney}/5</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-gray-600">Return</div>
-                          <div className="font-medium">{review.ratings.wouldReturn}/5</div>
-                        </div>
-                      </div>
                     </div>
                   );
                 })}
