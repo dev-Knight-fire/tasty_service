@@ -17,6 +17,9 @@ export default function MapComponent({ category }) {
   const { messages } = useLang();
   const searchParams = useSearchParams();
   const locationValue = searchParams.get('locationValue');
+  const latParam = searchParams.get('lat');
+  const lngParam = searchParams.get('lng');
+  
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markerRef = useRef(null); // Ref to store the marker instance for search
@@ -349,6 +352,43 @@ export default function MapComponent({ category }) {
       });
     }
   }, [warsaw.lng, warsaw.lat, zoom]);
+
+  // Handle URL parameters for lat/lng
+  useEffect(() => {
+    if (map.current && latParam && lngParam) {
+      const lat = parseFloat(latParam);
+      const lng = parseFloat(lngParam);
+      
+      // Validate coordinates
+      if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        console.log('Moving to coordinates from URL:', lat, lng);
+        
+        // Remove previous search marker if exists
+        if (markerRef.current) {
+          markerRef.current.remove();
+          markerRef.current = null;
+        }
+        
+        // Add marker at the specified location
+        markerRef.current = new maptilersdk.Marker({ color: "#2563eb" })
+          .setLngLat([lng, lat])
+          .addTo(map.current);
+        
+        // Fly to the location
+        map.current.flyTo({
+          center: [lng, lat],
+          zoom: 18, // Closer zoom level for specific location
+          essential: true,
+          duration: 1500 // Animation duration
+        });
+        
+        // Update search query to show the coordinates
+        setSearchQuery(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+      } else {
+        console.error('Invalid coordinates in URL parameters:', latParam, lngParam);
+      }
+    }
+  }, [map.current, latParam, lngParam]);
 
   // Add/remove click event listener based on isAddingReview state
   useEffect(() => {

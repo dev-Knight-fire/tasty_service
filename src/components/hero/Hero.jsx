@@ -106,7 +106,7 @@ const Hero = () => {
             {messages['heroTitle']}
           </h1>
           <div className="m-10">
-            <Link href="/contact-us">
+            <Link href="/map/all">
               <PrimaryButton>{messages['getintouchTitle']}</PrimaryButton>
             </Link>
           </div>
