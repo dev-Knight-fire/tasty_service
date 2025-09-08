@@ -5,9 +5,9 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import './map.css';
 import { collection, getDocs, getDoc, query, where, doc } from "firebase/firestore";
 import { db } from '../../firebase/firestore';
-import ServiceDetailsModal from './serviceDetailsModal';
 import AddReviewModal from './AddReviewModal';
-import { FaPlus, FaMapMarkerAlt, FaLocationArrow } from 'react-icons/fa';
+import RestaurantDetailsModal from './RestaurantDetailsModal';
+import { FaPlus, FaMapMarkerAlt, FaLocationArrow, FaUtensils } from 'react-icons/fa';
 import { useLang } from '@/contexts/LangContext';
 import { useSearchParams } from 'next/navigation';
 
@@ -21,6 +21,7 @@ export default function MapComponent({ category }) {
   const map = useRef(null);
   const markerRef = useRef(null); // Ref to store the marker instance for search
   const serviceMarkersRef = useRef([]); // Store service markers to clean up if needed
+  const placeMarkersRef = useRef([]); // Store place markers to clean up if needed
   const reviewMarkerRef = useRef(null); // Ref for the review marker
   const userLocationMarkerRef = useRef(null); // Ref for the user location marker
   const warsaw = { lng: 21.017532, lat: 52.237049 };
@@ -30,6 +31,7 @@ export default function MapComponent({ category }) {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [services, setServices] = useState([]);
+  const [places, setPlaces] = useState([]); // State for places
   const [loading, setLoading] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   
@@ -37,6 +39,10 @@ export default function MapComponent({ category }) {
   const [isAddingReview, setIsAddingReview] = useState(false);
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
+
+  // Restaurant details modal state
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [showRestaurantModal, setShowRestaurantModal] = useState(false);
 
   // User location state
   const [userLocation, setUserLocation] = useState(null);
@@ -143,6 +149,76 @@ export default function MapComponent({ category }) {
     setShowUserLocation(true);
   };
 
+  // Handle restaurant marker click
+  const handleRestaurantClick = (place) => {
+    console.log('Restaurant clicked:', place); // Debug log
+    
+    // Set selected restaurant
+    setSelectedRestaurant(place);
+    setShowRestaurantModal(true);
+    
+    // Zoom in on the restaurant location
+    if (map.current) {
+      console.log('Flying to location:', [place.lng, place.lat]); // Debug log
+      map.current.flyTo({
+        center: [place.lng, place.lat],
+        zoom: 18, // Closer zoom level
+        essential: true,
+        duration: 1000 // Animation duration in milliseconds
+      });
+    }
+  };
+
+  // Create restaurant icon marker (smaller size)
+  const createRestaurantMarker = (place) => {
+    const markerElement = document.createElement('div');
+    markerElement.className = 'restaurant-marker';
+    markerElement.innerHTML = `
+      <div class="relative cursor-pointer">
+        <div class="w-5 h-5 bg-red-600 border border-white rounded-full shadow-md flex items-center justify-center">
+          <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+          </svg>
+        </div>
+        <div class="absolute -top-0.5 -left-0.5 w-6 h-6 bg-red-600 bg-opacity-20 rounded-full"></div>
+      </div>
+    `;
+
+    // Add click event to marker
+    markerElement.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent map click event
+      console.log('Marker clicked for place:', place.venueName); // Debug log
+      handleRestaurantClick(place);
+    });
+
+    return new maptilersdk.Marker({
+      element: markerElement,
+      anchor: 'center'
+    })
+      .setLngLat([place.lng, place.lat])
+      .addTo(map.current);
+  };
+
+  // Add place markers to map
+  const addPlaceMarkers = (places) => {
+    if (!map.current) return;
+
+    console.log('Adding place markers:', places.length); // Debug log
+
+    // Clear existing place markers
+    placeMarkersRef.current.forEach(marker => marker.remove());
+    placeMarkersRef.current = [];
+
+    // Add new markers for each place
+    places.forEach(place => {
+      if (place.lat && place.lng) {
+        console.log('Adding marker for place:', place.venueName, 'at:', place.lat, place.lng); // Debug log
+        const marker = createRestaurantMarker(place);
+        placeMarkersRef.current.push(marker);
+      }
+    });
+  };
+
   // Toggle user location visibility
   const toggleUserLocation = async () => {
     if (showUserLocation) {
@@ -234,16 +310,21 @@ export default function MapComponent({ category }) {
       reviewMarkerRef.current = null;
     }
 
-    // Optionally, you could add a marker for the new place
+    // Add a marker for the newly created place
     if (reviewData.place && map.current) {
-      // Add a marker for the newly created place
-      const placeMarker = new maptilersdk.Marker({ color: "#10b981" })
-        .setLngLat([reviewData.place.lng, reviewData.place.lat])
-        .addTo(map.current);
+      const placeMarker = createRestaurantMarker(reviewData.place);
+      placeMarkersRef.current.push(placeMarker);
       
-      // Store the marker reference for potential cleanup
-      serviceMarkersRef.current.push(placeMarker);
+      // Update places state
+      setPlaces(prev => [...prev, reviewData.place]);
     }
+  };
+
+  // Handle add review from restaurant modal
+  const handleAddReviewFromRestaurant = (place) => {
+    setShowRestaurantModal(false);
+    setSelectedLocation({ lng: place.lng, lat: place.lat });
+    setShowAddReviewModal(true);
   };
 
   // Initialize map
@@ -252,11 +333,17 @@ export default function MapComponent({ category }) {
     
     // Ensure the container has dimensions before initializing the map
     if (mapContainer.current) {
+      console.log('Initializing map...'); // Debug log
       map.current = new maptilersdk.Map({
         container: mapContainer.current,
         style: maptilersdk.MapStyle.STREETS,
         center: [warsaw.lng, warsaw.lat],
         zoom: zoom
+      });
+      
+      // Wait for map to load before adding markers
+      map.current.on('load', () => {
+        console.log('Map loaded successfully'); // Debug log
       });
     }
   }, [warsaw.lng, warsaw.lat, zoom]);
@@ -296,6 +383,37 @@ export default function MapComponent({ category }) {
       }
     };
   }, [isAddingReview]);
+
+  // Fetch places from Firestore
+  useEffect(() => {
+    const fetchPlaces = async () => {
+      try {
+        console.log('Fetching places from Firestore...'); // Debug log
+        const placesRef = collection(db, "places");
+        const querySnapshot = await getDocs(placesRef);
+        
+        const placesData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        console.log('Fetched places:', placesData); // Debug log
+        setPlaces(placesData);
+      } catch (error) {
+        console.error("Error fetching places from Firestore:", error);
+      }
+    };
+
+    fetchPlaces();
+  }, []);
+
+  // Add place markers when places data changes
+  useEffect(() => {
+    if (places.length > 0 && map.current) {
+      console.log('Places data changed, adding markers...'); // Debug log
+      addPlaceMarkers(places);
+    }
+  }, [places]);
 
   // Fetch services from Firestore
   useEffect(() => {
@@ -401,13 +519,6 @@ export default function MapComponent({ category }) {
   return (
     <div className="map-wrap relative w-full h-screen">
       {/* Service Details Modal */}
-      {selectedService && (
-        <ServiceDetailsModal
-          service={selectedService}
-          onClose={() => setSelectedService(null)}
-          services={services}
-        />
-      )}
 
       {/* Add Review Modal */}
       {showAddReviewModal && (
@@ -423,6 +534,18 @@ export default function MapComponent({ category }) {
           }}
           location={selectedLocation}
           onSubmit={handleReviewSubmit}
+        />
+      )}
+
+      {/* Restaurant Details Modal */}
+      {showRestaurantModal && selectedRestaurant && (
+        <RestaurantDetailsModal
+          restaurant={selectedRestaurant}
+          onClose={() => {
+            setShowRestaurantModal(false);
+            setSelectedRestaurant(null);
+          }}
+          onAddReview={handleAddReviewFromRestaurant}
         />
       )}
 
@@ -542,6 +665,16 @@ export default function MapComponent({ category }) {
                 : 'Current Location'
               }
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Places count info */}
+      {places.length > 0 && (
+        <div className="absolute bottom-4 left-4 z-10">
+          <div className="bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2">
+            <FaUtensils className="w-4 h-4" />
+            <span className="text-sm font-medium">{places.length} Restaurant(s)</span>
           </div>
         </div>
       )}
