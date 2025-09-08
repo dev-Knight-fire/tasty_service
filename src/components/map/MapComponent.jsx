@@ -7,7 +7,7 @@ import { collection, getDocs, getDoc, query, where, doc } from "firebase/firesto
 import { db } from '../../firebase/firestore';
 import ServiceDetailsModal from './serviceDetailsModal';
 import AddReviewModal from './AddReviewModal';
-import { FaPlus, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaPlus, FaMapMarkerAlt, FaLocationArrow } from 'react-icons/fa';
 import { useLang } from '@/contexts/LangContext';
 import { useSearchParams } from 'next/navigation';
 
@@ -22,6 +22,7 @@ export default function MapComponent({ category }) {
   const markerRef = useRef(null); // Ref to store the marker instance for search
   const serviceMarkersRef = useRef([]); // Store service markers to clean up if needed
   const reviewMarkerRef = useRef(null); // Ref for the review marker
+  const userLocationMarkerRef = useRef(null); // Ref for the user location marker
   const warsaw = { lng: 21.017532, lat: 52.237049 };
   const zoom = 14;
   const [searchQuery, setSearchQuery] = useState(locationValue || '');
@@ -37,11 +38,148 @@ export default function MapComponent({ category }) {
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
 
+  // User location state
+  const [userLocation, setUserLocation] = useState(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [showUserLocation, setShowUserLocation] = useState(false);
+
   // Multi-select: array of selected category keys (except "all")
   const [selectedCategories, setSelectedCategories] = useState(
     category && Array.isArray(category) ? category : []
   );
   maptilersdk.config.apiKey = 'GOq67Pre20jQoPdwn8zY';
+
+  // Get user location via IP address
+  const getUserLocationByIP = async () => {
+    setIsLoadingLocation(true);
+    try {
+      // Using ipapi.co for IP-based geolocation (free tier available)
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      
+      if (data.latitude && data.longitude) {
+        const location = {
+          lat: data.latitude,
+          lng: data.longitude,
+          city: data.city,
+          country: data.country_name,
+          ip: data.ip
+        };
+        setUserLocation(location);
+        return location;
+      } else {
+        throw new Error('Unable to get location from IP');
+      }
+    } catch (error) {
+      console.error('Error getting location by IP:', error);
+      // Fallback to browser geolocation if IP method fails
+      return getCurrentPosition();
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+
+  // Fallback to browser geolocation
+  const getCurrentPosition = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            city: 'Current Location',
+            country: '',
+            ip: 'Browser Geolocation'
+          };
+          setUserLocation(location);
+          resolve(location);
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    });
+  };
+
+  // Mark user location on map
+  const markUserLocation = (location) => {
+    if (!map.current || !location) return;
+
+    // Remove previous user location marker if exists
+    if (userLocationMarkerRef.current) {
+      userLocationMarkerRef.current.remove();
+      userLocationMarkerRef.current = null;
+    }
+
+    // Create a custom marker element
+    const markerElement = document.createElement('div');
+    markerElement.className = 'user-location-marker';
+    markerElement.innerHTML = `
+      <div class="relative">
+        <div class="w-4 h-4 bg-blue-600 border-2 border-white rounded-full shadow-lg"></div>
+        <div class="absolute -top-1 -left-1 w-6 h-6 bg-blue-600 bg-opacity-30 rounded-full animate-ping"></div>
+      </div>
+    `;
+
+    // Add marker to map
+    userLocationMarkerRef.current = new maptilersdk.Marker({
+      element: markerElement,
+      anchor: 'center'
+    })
+      .setLngLat([location.lng, location.lat])
+      .addTo(map.current);
+
+    setShowUserLocation(true);
+  };
+
+  // Toggle user location visibility
+  const toggleUserLocation = async () => {
+    if (showUserLocation) {
+      // Hide user location
+      if (userLocationMarkerRef.current) {
+        userLocationMarkerRef.current.remove();
+        userLocationMarkerRef.current = null;
+      }
+      setShowUserLocation(false);
+    } else {
+      // Show user location
+      if (userLocation) {
+        markUserLocation(userLocation);
+        // Center map on user location
+        map.current.flyTo({
+          center: [userLocation.lng, userLocation.lat],
+          zoom: 15,
+          essential: true
+        });
+      } else {
+        // Get location first
+        try {
+          const location = await getUserLocationByIP();
+          markUserLocation(location);
+          // Center map on user location
+          map.current.flyTo({
+            center: [location.lng, location.lat],
+            zoom: 15,
+            essential: true
+          });
+        } catch (error) {
+          console.error('Failed to get user location:', error);
+          alert('Unable to get your location. Please try again.');
+        }
+      }
+    }
+  };
 
   // Handle map click for adding reviews
   const handleMapClick = (e) => {
@@ -97,12 +235,16 @@ export default function MapComponent({ category }) {
   // Initialize map
   useEffect(() => {
     if (map.current) return;
-    map.current = new maptilersdk.Map({
-      container: mapContainer.current,
-      style: maptilersdk.MapStyle.STREETS,
-      center: [warsaw.lng, warsaw.lat],
-      zoom: zoom
-    });
+    
+    // Ensure the container has dimensions before initializing the map
+    if (mapContainer.current) {
+      map.current = new maptilersdk.Map({
+        container: mapContainer.current,
+        style: maptilersdk.MapStyle.STREETS,
+        center: [warsaw.lng, warsaw.lat],
+        zoom: zoom
+      });
+    }
   }, [warsaw.lng, warsaw.lat, zoom]);
 
   // Add/remove click event listener based on isAddingReview state
@@ -243,7 +385,7 @@ export default function MapComponent({ category }) {
   }, [debouncedSearchQuery]);
 
   return (
-    <div className="map-wrap relative">
+    <div className="map-wrap relative w-full h-screen">
       {/* Service Details Modal */}
       {selectedService && (
         <ServiceDetailsModal
@@ -270,27 +412,11 @@ export default function MapComponent({ category }) {
         />
       )}
 
-      {/* Add Review Button - Top Center */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-        <button
-          onClick={toggleAddReviewMode}
-          className={`px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 transition-all duration-200 ${
-            isAddingReview
-              ? "bg-red-600 text-white hover:bg-red-700"
-              : "bg-blue-600 text-white hover:bg-blue-700"
-          }`}
-        >
-          <FaPlus className="w-4 h-4" />
-          <span>
-            {isAddingReview ? "Cancel Adding Review" : "Add new place and review"}
-          </span>
-        </button>
-      </div>
-
-      {/* Search Bar & Category Filter */}
+      {/* Search Bar & Action Buttons Container */}
       <div className="absolute top-4 left-4 z-10 w-96 max-w-full">
         <div className="bg-white rounded-lg shadow-lg p-4">
-          <div className="flex items-center space-x-2">
+          {/* Search Input */}
+          <div className="flex items-center space-x-2 mb-3">
             <input
               type="text"
               value={searchQuery}
@@ -319,9 +445,51 @@ export default function MapComponent({ category }) {
               )}
             </button>
           </div>
+
+          {/* Action Buttons Row */}
+          <div className="flex space-x-2">
+            {/* Add Review Button */}
+            <button
+              onClick={toggleAddReviewMode}
+              className={`flex-1 px-4 py-2 rounded-lg shadow-md flex items-center justify-center space-x-2 transition-all duration-200 ${
+                isAddingReview
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            >
+              <FaPlus className="w-4 h-4" />
+              <span className="text-sm">
+                {isAddingReview ? "Cancel" : "Add Place"}
+              </span>
+            </button>
+
+            {/* User Location Button */}
+            <button
+              onClick={toggleUserLocation}
+              disabled={isLoadingLocation}
+              className={`flex-1 px-4 py-2 rounded-lg shadow-md flex items-center justify-center space-x-2 transition-all duration-200 ${
+                showUserLocation
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-600 text-white hover:bg-gray-700"
+              } ${isLoadingLocation ? "opacity-70 cursor-not-allowed" : ""}`}
+            >
+              {isLoadingLocation ? (
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+              ) : (
+                <FaLocationArrow className="w-4 h-4" />
+              )}
+              <span className="text-sm">
+                {isLoadingLocation ? "Loading..." : showUserLocation ? "Hide Location" : "My Location"}
+              </span>
+            </button>
+          </div>
+
           {/* Search Results Dropdown */}
           {searchResults.length > 0 && (
-            <div className="mt-2 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+            <div className="mt-3 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
               {searchResults.map((result, index) => (
                 <button
                   key={index}
@@ -348,8 +516,23 @@ export default function MapComponent({ category }) {
           </div>
         </div>
       )}
+
+      {/* User location info */}
+      {showUserLocation && userLocation && (
+        <div className="absolute bottom-4 right-4 z-10">
+          <div className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg">
+            <div className="text-sm font-medium">Your Location</div>
+            <div className="text-xs opacity-90">
+              {userLocation.city && userLocation.country 
+                ? `${userLocation.city}, ${userLocation.country}`
+                : 'Current Location'
+              }
+            </div>
+          </div>
+        </div>
+      )}
       
-      <div ref={mapContainer} className="map" />
+      <div ref={mapContainer} className="map w-full h-full" />
     </div>
   );
 }
