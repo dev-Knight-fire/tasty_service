@@ -1,11 +1,16 @@
 "use client";
+import { serverTimestamp, addDoc, collection } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage, db } from "../../firebase/firestore";
 import React, { useState } from "react";
 import { FaTimes, FaStar, FaCamera, FaMapMarkerAlt } from "react-icons/fa";
+import { useAuth } from "@/contexts/AuthContext"; // Assuming you have an auth context
 
 const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
+  const { user } = useAuth(); // Get current user
   const [formData, setFormData] = useState({
     venueName: "",
-    visitDate: new Date().toISOString().split("T")[0],
+    visitDate: new Date().toISOString().split('T')[0], // Default to today
     ratings: {
       food: 0,
       cleanliness: 0,
@@ -18,6 +23,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -69,14 +75,123 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  // Upload photos to Firebase Storage
+  const uploadPhotos = async (photos) => {
+    const uploadPromises = photos.map(async (photo, index) => {
+      const timestamp = Date.now();
+      const fileName = `reviews/${timestamp}_${index}_${photo.name}`;
+      const storageRef = ref(storage, fileName);
+      
+      try {
+        const snapshot = await uploadBytes(storageRef, photo);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        throw error;
+      }
+    });
+    
+    return Promise.all(uploadPromises);
+  };
+
+  // Save place to Firestore
+  const savePlace = async (placeData) => {
+    try {
+      const placeRef = await addDoc(collection(db, "places"), placeData);
+      return placeRef.id;
+    } catch (error) {
+      console.error('Error saving place:', error);
+      throw error;
+    }
+  };
+
+  // Save review to Firestore
+  const saveReview = async (reviewData) => {
+    try {
+      const reviewRef = await addDoc(collection(db, "reviews"), reviewData);
+      return reviewRef.id;
+    } catch (error) {
+      console.error('Error saving review:', error);
+      throw error;
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    if (!user) {
+      alert("Please log in to submit a review");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 1. Upload photos to Firebase Storage
+      let photoUrls = [];
+      if (formData.photos.length > 0) {
+        photoUrls = await uploadPhotos(formData.photos);
+      }
+
+      // 2. Save place to places collection
+      const placeData = {
+        lat: location.lat,
+        lng: location.lng,
+        venueName: formData.venueName.trim(),
+        createdAt: serverTimestamp(),
+        owner: user.uid
+      };
+
+      const placeId = await savePlace(placeData);
+
+      // 3. Save review to reviews collection
+      const reviewData = {
+        userId: user.uid,
+        placeId: placeId,
+        ratings: formData.ratings,
+        comment: formData.comment.trim(),
+        photos: photoUrls,
+        visitDate: new Date(formData.visitDate),
+        createdAt: serverTimestamp()
+      };
+
+      const reviewId = await saveReview(reviewData);
+
+      // 4. Call the onSubmit callback with the saved data
       onSubmit({
-        ...formData,
-        location: location
+        placeId,
+        reviewId,
+        place: placeData,
+        review: reviewData
       });
+
+      // 5. Reset form and close modal
+      setFormData({
+        venueName: "",
+        visitDate: new Date().toISOString().split('T')[0],
+        ratings: {
+          food: 0,
+          cleanliness: 0,
+          service: 0,
+          valueForMoney: 0,
+          wouldReturn: 0
+        },
+        comment: "",
+        photos: []
+      });
+      setErrors({});
       onClose();
+
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('Failed to submit review. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -107,6 +222,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={isSubmitting}
           >
             <FaTimes className="w-6 h-6" />
           </button>
@@ -135,6 +251,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
                 errors.venueName ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Enter venue name"
+              disabled={isSubmitting}
             />
             {errors.venueName && (
               <p className="text-red-500 text-sm mt-1">{errors.venueName}</p>
@@ -153,6 +270,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.visitDate ? "border-red-500" : "border-gray-300"
               }`}
+              disabled={isSubmitting}
             />
             {errors.visitDate && (
               <p className="text-red-500 text-sm mt-1">{errors.visitDate}</p>
@@ -226,6 +344,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Share your experience..."
+              disabled={isSubmitting}
             />
           </div>
 
@@ -234,7 +353,9 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
               Photos (Optional, Max 3)
             </label>
             <div className="flex items-center space-x-2">
-              <label className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
+              <label className={`flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}>
                 <FaCamera className="text-gray-500" />
                 <span className="text-sm text-gray-700">Choose Photos</span>
                 <input
@@ -243,6 +364,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
                   accept="image/*"
                   onChange={handlePhotoChange}
                   className="hidden"
+                  disabled={isSubmitting}
                 />
               </label>
               {formData.photos.length > 0 && (
@@ -258,14 +380,28 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit }) => {
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 ${
+                isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+              disabled={isSubmitting}
             >
-              Submit Review
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                  </svg>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <span>Submit Review</span>
+              )}
             </button>
           </div>
         </form>

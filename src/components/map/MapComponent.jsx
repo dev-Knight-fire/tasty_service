@@ -218,9 +218,12 @@ export default function MapComponent({ category }) {
 
   // Handle review submission
   const handleReviewSubmit = (reviewData) => {
-    console.log("Review submitted:", reviewData);
-    // Here you would typically save the review to your database
-    // For now, we'll just log it
+    console.log("Review submitted successfully:", reviewData);
+    
+    // Show success message
+    alert('Review submitted successfully!');
+    
+    // Reset states
     setIsAddingReview(false);
     setShowAddReviewModal(false);
     setSelectedLocation(null);
@@ -229,6 +232,17 @@ export default function MapComponent({ category }) {
     if (reviewMarkerRef.current) {
       reviewMarkerRef.current.remove();
       reviewMarkerRef.current = null;
+    }
+
+    // Optionally, you could add a marker for the new place
+    if (reviewData.place && map.current) {
+      // Add a marker for the newly created place
+      const placeMarker = new maptilersdk.Marker({ color: "#10b981" })
+        .setLngLat([reviewData.place.lng, reviewData.place.lat])
+        .addTo(map.current);
+      
+      // Store the marker reference for potential cleanup
+      serviceMarkersRef.current.push(placeMarker);
     }
   };
 
