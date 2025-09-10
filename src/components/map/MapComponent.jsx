@@ -6,6 +6,8 @@ import './map.css';
 import { collection, getDocs, getDoc, query, where, doc } from "firebase/firestore";
 import { db } from '../../firebase/firestore';
 import AddReviewModal from './AddReviewModal';
+import AddPromotionModal from './AddPromotionModal';
+import AddOptionModal from './AddOptionModal';
 import RestaurantDetailsModal from './RestaurantDetailsModal';
 import { FaPlus, FaMapMarkerAlt, FaLocationArrow, FaUtensils } from 'react-icons/fa';
 import { useLang } from '@/contexts/LangContext';
@@ -41,6 +43,8 @@ export default function MapComponent({ category }) {
   // New state for review functionality
   const [isAddingReview, setIsAddingReview] = useState(false);
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
+  const [showAddPromotionModal, setShowAddPromotionModal] = useState(false);
+  const [showAddOptionModal, setShowAddOptionModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
 
   // Restaurant details modal state
@@ -261,7 +265,7 @@ export default function MapComponent({ category }) {
     }
   };
 
-  // Handle map click for adding reviews
+  // Handle map click for adding reviews/promotions
   const handleMapClick = (e) => {
     if (isAddingReview) {
       const { lng, lat } = e.lngLat;
@@ -278,8 +282,8 @@ export default function MapComponent({ category }) {
         .setLngLat([lng, lat])
         .addTo(map.current);
       
-      // Show the review modal
-      setShowAddReviewModal(true);
+      // Show the option modal
+      setShowAddOptionModal(true);
     }
   };
 
@@ -294,6 +298,17 @@ export default function MapComponent({ category }) {
       }
       setSelectedLocation(null);
     }
+  };
+
+  // Handle option selection
+  const handleSelectReview = () => {
+    setShowAddOptionModal(false);
+    setShowAddReviewModal(true);
+  };
+
+  const handleSelectPromotion = () => {
+    setShowAddOptionModal(false);
+    setShowAddPromotionModal(true);
   };
 
   // Handle review submission
@@ -324,12 +339,48 @@ export default function MapComponent({ category }) {
     }
   };
 
+  // Handle promotion submission
+  const handlePromotionSubmit = (data) => {
+    console.log("Promotion submitted successfully:", data);
+    
+    // Show success message
+    alert('Promotion submitted successfully!');
+    
+    // Reset states
+    setIsAddingReview(false);
+    setShowAddPromotionModal(false);
+    setSelectedLocation(null);
+    
+    // Remove the review marker
+    if (reviewMarkerRef.current) {
+      reviewMarkerRef.current.remove();
+      reviewMarkerRef.current = null;
+    }
+
+    // Add a marker for the newly created place
+    if (data.place && map.current) {
+      const placeMarker = createRestaurantMarker(data.place);
+      placeMarkersRef.current.push(placeMarker);
+      
+      // Update places state
+      setPlaces(prev => [...prev, data.place]);
+    }
+  };
+
   // Handle add review from restaurant modal
   const handleAddReviewFromRestaurant = (place) => {
     setShowRestaurantModal(false);
     setSelectedLocation({ lng: place.lng, lat: place.lat });
     setSelectedRestaurant(place); // Set the selected restaurant
     setShowAddReviewModal(true);
+  };
+
+  // Handle add promotion from restaurant modal
+  const handleAddPromotionFromRestaurant = (place) => {
+    setShowRestaurantModal(false);
+    setSelectedLocation({ lng: place.lng, lat: place.lat });
+    setSelectedRestaurant(place); // Set the selected restaurant
+    setShowAddPromotionModal(true);
   };
 
   // Initialize map
@@ -410,8 +461,8 @@ export default function MapComponent({ category }) {
           .setLngLat([lng, lat])
           .addTo(map.current);
         
-        // Show the review modal
-        setShowAddReviewModal(true);
+        // Show the option modal
+        setShowAddOptionModal(true);
       }
     };
 
@@ -560,26 +611,53 @@ export default function MapComponent({ category }) {
 
   return (
     <div className="map-wrap relative w-full h-screen">
-      {/* Service Details Modal */}
+      {/* Add Option Modal */}
+      <AddOptionModal
+        isOpen={showAddOptionModal}
+        onClose={() => {
+          setShowAddOptionModal(false);
+          setIsAddingReview(false);
+          if (reviewMarkerRef.current) {
+            reviewMarkerRef.current.remove();
+            reviewMarkerRef.current = null;
+          }
+        }}
+        onSelectReview={handleSelectReview}
+        onSelectPromotion={handleSelectPromotion}
+      />
 
       {/* Add Review Modal */}
-      {showAddReviewModal && (
-        <AddReviewModal
-          isOpen={showAddReviewModal}
-          onClose={() => {
-            setShowAddReviewModal(false);
-            setIsAddingReview(false);
-            setSelectedRestaurant(null); // Clear selected restaurant
-            if (reviewMarkerRef.current) {
-              reviewMarkerRef.current.remove();
-              reviewMarkerRef.current = null;
-            }
-          }}
-          location={selectedLocation}
-          restaurant={selectedRestaurant} // Pass the selected restaurant data
-          onSubmit={handleReviewSubmit}
-        />
-      )}
+      <AddReviewModal
+        isOpen={showAddReviewModal}
+        onClose={() => {
+          setShowAddReviewModal(false);
+          setIsAddingReview(false);
+          setSelectedRestaurant(null); // Clear selected restaurant
+          if (reviewMarkerRef.current) {
+            reviewMarkerRef.current.remove();
+            reviewMarkerRef.current = null;
+          }
+        }}
+        location={selectedLocation}
+        restaurant={selectedRestaurant} // Pass the selected restaurant data
+        onSubmit={handleReviewSubmit}
+      />
+
+      {/* Add Promotion Modal */}
+      <AddPromotionModal
+        isOpen={showAddPromotionModal}
+        onClose={() => {
+          setShowAddPromotionModal(false);
+          setIsAddingReview(false);
+          if (reviewMarkerRef.current) {
+            reviewMarkerRef.current.remove();
+            reviewMarkerRef.current = null;
+          }
+        }}
+        location={selectedLocation}
+        restaurant={selectedRestaurant} // Pass the selected restaurant data
+        onSubmit={handlePromotionSubmit}
+      />
 
       {/* Restaurant Details Modal */}
       {showRestaurantModal && selectedRestaurant && (
@@ -590,6 +668,7 @@ export default function MapComponent({ category }) {
             setSelectedRestaurant(null);
           }}
           onAddReview={handleAddReviewFromRestaurant}
+          onAddPromotion={handleAddPromotionFromRestaurant}
         />
       )}
 
@@ -629,7 +708,7 @@ export default function MapComponent({ category }) {
 
           {/* Action Buttons Row */}
           <div className="flex space-x-2">
-            {/* Add Review Button */}
+            {/* Add Place Button */}
             <button
               onClick={toggleAddReviewMode}
               className={`flex-1 px-4 py-2 rounded-lg shadow-md flex items-center justify-center space-x-2 transition-all duration-200 ${
@@ -693,7 +772,7 @@ export default function MapComponent({ category }) {
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
           <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2">
             <FaMapMarkerAlt className="w-4 h-4" />
-            <span>Click on the map to add a review for that location</span>
+            <span>Click on the map to add a review or promotion for that location</span>
           </div>
         </div>
       )}
@@ -727,9 +806,3 @@ export default function MapComponent({ category }) {
     </div>
   );
 }
-
-
-
-
-
-

@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase/firestore';
-import { FaTimes, FaStar, FaMapMarkerAlt, FaUtensils, FaPlus, FaUser, FaCalendarAlt } from 'react-icons/fa';
+import { FaTimes, FaStar, FaMapMarkerAlt, FaUtensils, FaPlus, FaUser, FaCalendarAlt, FaGift } from 'react-icons/fa';
 
-const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
+const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview, onAddPromotion }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [debugInfo, setDebugInfo] = useState('');
@@ -192,19 +192,30 @@ const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview }) => {
             </div>
           </div>
 
+          {/* Action Buttons */}
+          <div className="flex space-x-4">
+            <button
+              onClick={() => onAddReview(restaurant)}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <FaPlus className="w-4 h-4" />
+              <span>Add Review</span>
+            </button>
+            <button
+              onClick={() => onAddPromotion(restaurant)}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <FaGift className="w-4 h-4" />
+              <span>Add Promotion</span>
+            </button>
+          </div>
+
           {/* Reviews Section */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold text-gray-800">
                 Reviews ({reviews.length})
               </h4>
-              <button
-                onClick={() => onAddReview(restaurant)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <FaPlus className="w-4 h-4" />
-                <span>Add Review</span>
-              </button>
             </div>
 
             {loading ? (
