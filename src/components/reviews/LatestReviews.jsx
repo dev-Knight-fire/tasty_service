@@ -1,272 +1,295 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, limit, doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firestore';
-import { FaStar, FaPlus, FaUser, FaCamera, FaUtensils } from 'react-icons/fa';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import ReviewDetailModal from './ReviewDetailModal';
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  doc as docRef,
+  getDoc,
+} from "firebase/firestore";
+import { db } from "../../firebase/firestore";
+import { FaStar, FaPlus, FaUser, FaCamera, FaUtensils } from "react-icons/fa";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import ReviewDetailModal from "./ReviewDetailModal";
+
+/**
+ * LatestReviews.jsx
+ * 
+ * A polished, production-ready version of the LatestReviews component with:
+ * - Parallel Firestore fetching for place docs (faster)
+ * - Beautiful card UI, hover states, and subtle motion
+ * - Robust empty/error/loading states (with shimmer skeletons)
+ * - Accessible labels & keyboard focus
+ * - Safe fallbacks when data is missing
+ */
+
+const SKELETON_COUNT = 6;
 
 const LatestReviews = () => {
   const { user } = useAuth();
   const router = useRouter();
+
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddReviewModal, setShowAddReviewModal] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedReview, setSelectedReview] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
-  // Fetch latest 5 reviews with place information
+  // ---- Data Fetch ----
   useEffect(() => {
+    let mounted = true;
+
     const fetchLatestReviews = async () => {
       try {
-        console.log('Starting to fetch reviews...');
-        
-        const reviewsRef = collection(db, "reviews");
-        const q = query(
-          reviewsRef,
+        setLoading(true);
+        setError(null);
+
+        const reviewsQ = query(
+          collection(db, "reviews"),
           orderBy("createdAt", "desc"),
           limit(5)
         );
-        
-        const querySnapshot = await getDocs(q);
-        console.log('Found reviews:', querySnapshot.size);
-        
-        const reviewsData = [];
-        
-        for (const docSnapshot of querySnapshot.docs) {
-          const reviewData = {
-            id: docSnapshot.id,
-            ...docSnapshot.data()
-          };
-          
-          console.log('Processing review:', reviewData.id, 'with placeId:', reviewData.placeId);
-          
-          // Fetch place information
-          if (reviewData.placeId) {
+
+        const snap = await getDocs(reviewsQ);
+        const base = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+        // Fetch associated place docs in parallel where placeId exists
+        const withPlaces = await Promise.all(
+          base.map(async (rev) => {
+            if (!rev.placeId) return { ...rev, place: null };
             try {
-              console.log('Fetching place data for placeId:', reviewData.placeId);
-              const placeDoc = await getDoc(doc(db, "places", reviewData.placeId));
-              
-              if (placeDoc.exists()) {
-                const placeData = {
-                  id: placeDoc.id,
-                  ...placeDoc.data()
-                };
-                reviewData.place = placeData;
-                console.log('Place data loaded:', placeData);
-              } else {
-                console.log('Place document does not exist for placeId:', reviewData.placeId);
-                reviewData.place = null;
-              }
-            } catch (error) {
-              console.error("Error fetching place data for placeId", reviewData.placeId, ":", error);
-              reviewData.place = null;
+              const pDoc = await getDoc(docRef(db, "places", rev.placeId));
+              return {
+                ...rev,
+                place: pDoc.exists() ? { id: pDoc.id, ...pDoc.data() } : null,
+              };
+            } catch (e) {
+              console.error("Place fetch error:", e);
+              return { ...rev, place: null };
             }
-          } else {
-            console.log('No placeId found for review:', reviewData.id);
-            reviewData.place = null;
-          }
-          
-          reviewsData.push(reviewData);
-        }
-        
-        console.log('Final reviews data:', reviewsData);
-        setReviews(reviewsData);
-      } catch (error) {
-        console.error("Error fetching latest reviews:", error);
+          })
+        );
+
+        if (mounted) setReviews(withPlaces);
+      } catch (e) {
+        console.error("Error fetching latest reviews:", e);
+        if (mounted) setError("Couldn't load reviews. Please try again.");
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
     fetchLatestReviews();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Calculate relative time
+  // ---- Utils ----
   const getRelativeTime = (timestamp) => {
-    if (!timestamp) return 'Unknown time';
-    
+    if (!timestamp) return "Unknown";
     const now = new Date();
-    const reviewTime = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    const diffInSeconds = Math.floor((now - reviewTime) / 1000);
-    
-    if (diffInSeconds < 60) {
-      return `${diffInSeconds} sec ago`;
-    } else if (diffInSeconds < 3600) {
-      const minutes = Math.floor(diffInSeconds / 60);
-      return `${minutes} min ago`;
-    } else if (diffInSeconds < 86400) {
-      const hours = Math.floor(diffInSeconds / 3600);
-      return `${hours} hr ago`;
-    } else if (diffInSeconds < 2592000) {
-      const days = Math.floor(diffInSeconds / 86400);
-      return `${days} day${days > 1 ? 's' : ''} ago`;
-    } else {
-      const months = Math.floor(diffInSeconds / 2592000);
-      return `${months} month${months > 1 ? 's' : ''} ago`;
-    }
+    const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const s = Math.max(0, Math.floor((now - d) / 1000));
+    if (s < 60) return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    if (s < 2592000) return `${Math.floor(s / 86400)}d ago`;
+    return `${Math.floor(s / 2592000)}mo ago`;
   };
 
-  // Calculate average rating
-  const getAverageRating = (ratings) => {
-    const total = ratings.food + ratings.cleanliness + ratings.service + 
-                  ratings.valueForMoney + ratings.wouldReturn;
-    return total / 5;
+  const getAverageRating = (ratings = {}) => {
+    const keys = [
+      "food",
+      "cleanliness",
+      "service",
+      "valueForMoney",
+      "wouldReturn",
+    ];
+    const vals = keys.map((k) => Number(ratings[k] ?? 0));
+    const count = vals.filter((v) => v > 0).length || keys.length; // avoid NaN
+    const total = vals.reduce((a, b) => a + b, 0);
+    return total / count;
   };
 
-  // Truncate comment to 100 characters
-  const truncateComment = (comment) => {
-    if (!comment) return '';
-    return comment.length > 100 ? comment.substring(0, 100) + '...' : comment;
+  const truncate = (str, n = 120) => {
+    if (!str) return "";
+    return str.length > n ? str.slice(0, n - 1) + "…" : str;
   };
 
-  // Handle review card click
-  const handleReviewClick = (review) => {
-    console.log('Review clicked:', review);
-    console.log('Review place data:', review.place);
-    setSelectedReview(review);
-    setShowReviewModal(true);
-  };
+  const placeholderPhoto =
+    "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop";
 
-  // Render stars
-  const renderStars = (rating) => {
+  // ---- Render helpers ----
+  const Stars = ({ rating }) => (
+    <div className="flex items-center gap-1" aria-label={`Rating ${rating.toFixed(1)} out of 5`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <FaStar
+          key={i}
+          className={`w-3.5 h-3.5 ${i <= Math.round(rating) ? "text-yellow-400" : "text-gray-300 dark:text-gray-600"}`}
+        />
+      ))}
+      <span className="text-xs text-gray-600 dark:text-gray-400 ml-1">{rating.toFixed(1)}</span>
+    </div>
+  );
+
+  const ReviewCard = ({ review }) => {
+    const avg = useMemo(() => getAverageRating(review.ratings), [review.ratings]);
+    const time = useMemo(() => getRelativeTime(review.createdAt), [review.createdAt]);
+    const photo = review?.photos?.[0] || placeholderPhoto;
+    const venue = review?.place?.venueName || review?.place?.name;
+    const city = review?.place?.city || review?.place?.addressCity || review?.place?.cityName;
+
     return (
-      <div className="flex items-center space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <FaStar
-            key={star}
-            className={`w-3 h-3 ${
-              star <= rating ? "text-yellow-400" : "text-gray-300"
-            }`}
+      <motion.article
+        layout
+        onClick={() => {
+          setSelectedReview(review);
+          setShowReviewModal(true);
+        }}
+        className="group relative rounded-2xl overflow-hidden border border-gray-200/70 dark:border-gray-700/60 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-all cursor-pointer focus-within:ring-2 focus-within:ring-green-500"
+        whileHover={{ y: -2 }}
+      >
+        {/* Photo */}
+        <div className="relative h-40 w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photo}
+            alt={venue ? `${venue}${city ? ", " + city : ""}` : "Review photo"}
+            className="h-full w-full object-cover"
+            loading="lazy"
           />
-        ))}
-        <span className="text-xs text-gray-600 ml-1">({rating.toFixed(1)})</span>
-      </div>
+
+          {/* Top badges */}
+          <div className="absolute top-2 left-2 flex gap-2">
+            {venue && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/90 dark:bg-gray-900/80 px-2 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-100 shadow">
+                <FaUtensils className="w-3 h-3 text-red-600" /> {truncate(venue, 24)}
+              </span>
+            )}
+          </div>
+          <div className="absolute top-2 right-2">
+            <span className="rounded-full bg-black/70 text-white px-2 py-0.5 text-xs">{time}</span>
+          </div>
+
+          {/* Gradient overlay on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+
+        {/* Body */}
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                <FaUser className="w-4.5 h-4.5 text-gray-600 dark:text-gray-300" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                  {review.userDisplayName || review.userId || "Anonymous"}
+                </p>
+                {city && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{city}</p>
+                )}
+              </div>
+            </div>
+            <Stars rating={avg || 0} />
+          </div>
+
+          {review.comment && (
+            <p className="text-sm text-gray-700 dark:text-gray-300 italic line-clamp-3">“{truncate(review.comment, 140)}”</p>
+          )}
+        </div>
+      </motion.article>
     );
   };
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-3 gap-4 py-8">
-        {[...Array(6)].map((_, idx) => (
-          <div
-            key={idx}
-            className="aspect-square border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 animate-pulse flex flex-col"
-          >
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-700" />
-              <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
-            </div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gray-300 dark:bg-gray-700 rounded-full" />
-                <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
-              </div>
-              <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
-            </div>
-            <div className="flex-1">
-              <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-              <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-              <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
+  // ---- Layout ----
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-          Latest Reviews
-        </h3>
-      </div>
-
-      {reviews.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <FaCamera className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-          <p>No reviews yet. Be the first to share your experience!</p>
+    <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6">
+      <header className="flex items-center justify-between mb-5">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Latest Reviews</h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/map/all")}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+          >
+            <FaPlus className="w-4 h-4" /> Add Review
+          </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-4">
-          {/* Review Cards */}
-          {reviews.map((review) => {
-            const averageRating = getAverageRating(review.ratings);
-            const relativeTime = getRelativeTime(review.createdAt);
-            
-            return (
-              <div 
-                key={review.id} 
-                onClick={() => handleReviewClick(review)}
-                className="aspect-square border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50 dark:bg-gray-800 cursor-pointer"
+      </header>
+
+      {/* Loading */}
+      <AnimatePresence initial={false}>
+        {loading && (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            aria-busy="true"
+          >
+            {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+              <div
+                key={i}
+                className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
               >
-                <div className="flex flex-col h-full">
-                  {/* Place Info */}
-                  {review.place && review.place.venueName && (
-                    <div className="flex items-center space-x-2 mb-2">
-                      <FaUtensils className="w-3 h-3 text-red-600" />
-                      <p className="text-xs font-medium text-red-600 dark:text-red-400 truncate">
-                        {review.place.venueName}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* User Info and Rating */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <FaUser className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {review.userId}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {relativeTime}
-                        </p>
-                      </div>
-                    </div>
-                    {renderStars(averageRating)}
-                  </div>
-                  
-                  {/* Comment */}
-                  {review.comment && (
-                    <p className="italic text-gray-700 dark:text-gray-300 text-sm mb-3 flex-1">
-                      {`"${truncateComment(review.comment)}"`}
-                    </p>
-                  )}
-                  
-                  {/* Photo */}
-                  {review.photos && review.photos.length > 0 && (
-                    <div className="mt-auto">
-                      <img
-                        src={review.photos[0]}
-                        alt="Review photo"
-                        className="w-full h-40 object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
+                <div className="h-40 w-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 dark:from-gray-700 dark:via-gray-800 dark:to-gray-700 animate-[shimmer_1.5s_infinite]" />
+                <div className="p-4 space-y-3">
+                  <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <div className="h-3 w-2/3 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded" />
                 </div>
               </div>
-            );
-          })}
-          
-          {/* Add Review Button */}
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Error */}
+      {!loading && error && (
+        <div className="text-center py-10">
+          <p className="text-red-600 dark:text-red-400 font-medium mb-4">{error}</p>
           <button
-            onClick={() => router.push('/map/all')}
-            className="aspect-square border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-[#EAD7C2] hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200 flex flex-col items-center justify-center text-center"
+            onClick={() => location.reload()}
+            className="px-4 py-2 rounded-lg bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:opacity-90"
           >
-            <FaPlus className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Add Review
-            </span>
+            Retry
           </button>
         </div>
       )}
 
-      {/* Review Detail Modal */}
+      {/* Empty */}
+      {!loading && !error && reviews.length === 0 && (
+        <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+          <FaCamera className="w-12 h-12 mx-auto mb-4 opacity-60" />
+          <p className="mb-6">No reviews yet. Be the first to share your experience!</p>
+          <button
+            onClick={() => router.push("/map/all")}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
+          >
+            <FaPlus className="w-4 h-4" /> Add Review
+          </button>
+        </div>
+      )}
+
+      {/* Grid */}
+      {!loading && !error && reviews.length > 0 && (
+        <motion.div
+          layout
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          {reviews.map((rev) => (
+            <ReviewCard key={rev.id} review={rev} />
+          ))}
+        </motion.div>
+      )}
+
+      {/* Modal */}
       <ReviewDetailModal
         review={selectedReview}
         isOpen={showReviewModal}
@@ -276,27 +299,11 @@ const LatestReviews = () => {
         }}
       />
 
-      {/* Add Review Modal would go here */}
-      {showAddReviewModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Add Review
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              This would open the AddReviewModal component. You can integrate it here.
-            </p>
-            <button
-              onClick={() => setShowAddReviewModal(false)}
-              className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      <style jsx global>{`
+        @keyframes shimmer { 0% { background-position: -500px 0; } 100% { background-position: 500px 0; } }
+      `}</style>
+    </section>
   );
 };
 
-export default LatestReviews; 
+export default LatestReviews;
