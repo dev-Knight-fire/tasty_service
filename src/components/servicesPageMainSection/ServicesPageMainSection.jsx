@@ -68,7 +68,7 @@ const ServicesPageMainSection = () => {
     {
       key: "fastfood",
       title: "Fast Food & Quick Bites",
-      subtitle: "Quick and delicious meals for when you're on the go.",
+      subtitle: "Quick and delicious meals for when you are on the go.",
       image: "/images/fastfood.jpg",
       features: [
         "Burger joints",
@@ -115,7 +115,7 @@ const ServicesPageMainSection = () => {
       features: [
         "Michelin-starred restaurants",
         "Wine pairings",
-        "Chef's tasting menus",
+        "Chef tasting menus",
         "Elegant ambiance",
         "Premium ingredients"
       ],
@@ -166,7 +166,7 @@ const ServicesPageMainSection = () => {
           </h1>
           <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
             TastyService brings together authentic restaurant reviews, real-time promotions, and inspiring food content. 
-            Whether you're looking for a quick bite, fine dining experience, or food inspiration, we've got you covered.
+            Whether you are looking for a quick bite, fine dining experience, or food inspiration, we have got you covered.
           </p>
         </motion.div>
 
@@ -190,7 +190,7 @@ const ServicesPageMainSection = () => {
                 Authentic Reviews
               </h3>
               <p className="text-gray-700 dark:text-gray-300">
-                Read genuine reviews from real customers who've experienced these restaurants firsthand.
+                Read genuine reviews from real customers who have experienced these restaurants firsthand.
               </p>
             </motion.div>
             
