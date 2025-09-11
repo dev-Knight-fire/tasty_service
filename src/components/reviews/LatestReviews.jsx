@@ -51,7 +51,7 @@ const LatestReviews = () => {
         const reviewsQ = query(
           collection(db, "reviews"),
           orderBy("createdAt", "desc"),
-          limit(5)
+          limit(6)
         );
 
         const snap = await getDocs(reviewsQ);
