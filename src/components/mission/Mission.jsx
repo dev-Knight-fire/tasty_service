@@ -58,7 +58,7 @@ const AboutUsDetail = () => {
       id: "fastfood",
       icon: <Pizza className="text-[#206645] dark:text-green-400 h-5 w-5" />,
       title: "Fast Food & Quick Bites",
-      description: "Quick and delicious meals for when you're on the go.",
+      description: "Quick and delicious meals for when you are on the go.",
     },
     {
       id: "desserts",
@@ -121,7 +121,7 @@ const AboutUsDetail = () => {
                     </svg>
                   </div>
                   <p className="ml-3 text-gray-700 dark:text-gray-300">
-                    <span className="font-medium text-gray-900 dark:text-white">Verified Reviews</span> — Real experiences from genuine customers who've dined at these establishments.
+                    <span className="font-medium text-gray-900 dark:text-white">Verified Reviews</span> — Real experiences from genuine customers who have dined at these establishments.
                   </p>
                 </div>
                 <div className="flex items-start">
@@ -308,7 +308,7 @@ const AboutUsDetail = () => {
               Our Values
             </h2>
             <p className="text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto">
-              We're committed to creating a trustworthy platform that celebrates authentic culinary experiences.
+              We are committed to creating a trustworthy platform that celebrates authentic culinary experiences.
             </p>
           </motion.div>
           <motion.div
