@@ -129,9 +129,9 @@ const Influencers = () => {
     {
       id: "2",
       influencerId: "taste_traveler",
-      title: "LA's Most Instagrammable Brunch Spots",
+      title: "LA Most Instagrammable Brunch Spots",
       description:
-        "These brunch spots in LA are not only delicious but also perfect for your Instagram feed. Here's my complete guide...",
+        "These brunch spots in LA are not only delicious but also perfect for your Instagram feed. Here is my complete guide...",
       thumbnail:
         "https://images.unsplash.com/photo-1516685018646-549198525c1b?q=80&w=1200&auto=format&fit=crop",
       type: "post",
@@ -142,7 +142,7 @@ const Influencers = () => {
         lat: 34.0736,
         lng: -118.4004,
         city: "Los Angeles",
-        venue: "The Butcher's Daughter",
+        venue: "The Butcher Daughter",
       },
       engagement: { views: "890K", likes: "32K", comments: "850" },
     },
@@ -173,20 +173,20 @@ const Influencers = () => {
       influencerId: "chef_maria",
       title: "Chicago Deep Dish Pizza Recipe - Restaurant Secrets",
       description:
-        "I spent 3 months learning from Chicago's best pizza chefs. Here's the authentic deep dish recipe with all the secrets...",
+        "I spent 3 months learning from Chicago best pizza chefs. Here is the authentic deep dish recipe with all the secrets...",
       thumbnail:
         "https://images.unsplash.com/photo-1541823709867-1b206113eafd?q=80&w=1200&auto=format&fit=crop",
       type: "article",
       platform: "blog",
       url: "https://www.seriouseats.com/chicago-style-deep-dish-pizza-recipe-6751291",
       publishedAt: new Date("2024-01-12T09:20:00Z"),
-      location: { lat: 41.8781, lng: -87.6298, city: "Chicago", venue: "Lou Malnati's" },
+      location: { lat: 41.8781, lng: -87.6298, city: "Chicago", venue: "Lou Malnati" },
       engagement: { views: "125K", likes: "8.2K", comments: "340" },
     },
     {
       id: "5",
       influencerId: "dessert_dreams",
-      title: "SF's Most Decadent Desserts - Sweet Tooth Paradise",
+      title: "SF Most Decadent Desserts - Sweet Tooth Paradise",
       description:
         "San Francisco has some of the most incredible dessert spots. Here are my top picks for when you need something sweet...",
       thumbnail:
