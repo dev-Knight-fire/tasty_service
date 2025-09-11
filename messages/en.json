@@ -1,8 +1,10 @@
 {
   "homeTitle": "Map",
+  "homeLabel": "Home",
   "aboutusTitle": "About Us",
   "termsofuseTitle": "Terms of Use",
   "contactusTitle": "Contact Us",
+  "contactusLabel": "Contact Us",
   "contactusmainTitle": "Contact Plantilo",
   "contactusmainContent": "Plantilo is a place for conscious people who understand the impact of daily choices. Whether you are a business owner, eco-enthusiast, or just curious, we would love to hear from you!",
   "signinTitle": "Sign In",
@@ -44,8 +46,8 @@
   "transportTitle": "Medical transport",
   "institutionsTitle": "Institutions",
   "learnmoreTitle": "Learn More",
-  "bannerTitle": "Join the Movement for Practical Eco Living",
-  "bannerContent": "Discover, add, and share places that make sustainable living easy—refill stations, local food, zero-waste shops, repair cafés, and more. Every contribution helps our community grow!",
+  "bannerTitle": "Discover, Taste, and Share — Your Culinary Community Awaits",
+  "bannerContent": "Discover, review, and share the best local restaurants, cafes, and food spots. Add your favorites, find real-time promotions, and help our culinary community grow with every contribution!",
   "addlistingTitle": "Add your listing",
   "addlistTitle": "Add List",
   "searchcareTitle": "Search for care",
@@ -285,6 +287,7 @@
   "websiteurlLabel": "Website URL (optional)",
   "institutiondetailsTitle": "Institution Details",
   "categoryTitle": "Category",
+  "servicesTitle": "Services",
   "categoryPlaceholder": "Select category",
   "institutioncategoryOption1": "Social welfare office(MOPS, GOPS)",
   "institutioncategoryOption2": "Family support center(PCPR)",
@@ -394,32 +397,32 @@
   "faqTitle": "Frequently Asked Questions",
   "faq": [
     [
-      "What is Plantilo.com?",
-      "Plantilo is an interactive map and community platform for discovering and sharing places that support sustainable, healthy, and fair living. Whether you’re looking for zero-waste shops, local farmers’ markets, repair cafés, or community fridges, Plantilo helps you find and support eco-friendly options nearby."
+      "What is TastyService?",
+      "TastyService is a platform that helps you discover amazing food experiences, authentic restaurant reviews, and real-time promotions. Whether you're looking for a quick bite, fine dining, or food inspiration, TastyService connects you with the best culinary options nearby."
     ],
     [
-      "Who is Plantilo for?",
-      "For anyone interested in practical, positive changes for themselves and the planet: individuals, families, eco-conscious shoppers, local businesses, non-profits, and anyone who wants to find or share sustainable spots in their area."
+      "Who can use TastyService?",
+      "TastyService is for anyone who loves food! Whether you're a foodie, a casual diner, a restaurant owner, or someone looking for new places to eat, TastyService is designed to help you find and share great food experiences."
     ],
     [
-      "What can I find on Plantilo?",
-      "You can find a wide range of eco-friendly places: local food shops, organic stores, refill/bulk and zero-waste shops, repair and tool-sharing points, compost drop-offs, community fridges, eco-markets, and much more. Each place is marked on a map, so you can easily plan your next visit."
+      "What can I find on TastyService?",
+      "You can find a wide variety of restaurants, cafes, street food, dessert spots, and more. Browse authentic reviews, discover current promotions, and explore food categories to find your next favorite meal."
     ],
     [
-      "Is Plantilo free to use?",
-      "Yes! Plantilo is completely free for everyone. Anyone can browse the map, add new places, or suggest edits. We are building a supportive, open-access community."
+      "Is TastyService free to use?",
+      "Yes! TastyService is completely free for everyone. You can browse listings, read reviews, and discover promotions without any cost. Restaurant owners can also list their business for free."
     ],
     [
-      "Can I add my business or initiative?",
-      "Definitely. If you run a shop, market, repair point, community fridge, or any initiative that fits our categories, you can add your place to Plantilo for free. Just sign up and fill in your details — photos and descriptions welcome!"
+      "How do I add my restaurant or food business?",
+      "Simply sign up for a free account and fill in your business details. Add photos, descriptions, and any special offers to attract more customers. Your listing will appear on TastyService for food lovers to discover."
     ],
     [
-      "Who is behind Plantilo?",
-      "Plantilo is an independent project run by a small team passionate about local impact and sustainable living. We are not affiliated with large corporations or government institutions."
+      "Who runs TastyService?",
+      "TastyService is managed by a passionate team dedicated to connecting people with great food experiences. We work independently and are committed to supporting both diners and local food businesses."
     ],
     [
-      "What are Plantilo’s future plans?",
-      "We’re working on new features like reviews, route planning, community events, and even rewards for positive eco actions. If you have ideas or want to collaborate, reach out — we’re always growing with the community!"
+      "What features are coming soon to TastyService?",
+      "We’re working on new features like user reviews, personalized recommendations, event listings, and more ways to connect with the food community. If you have suggestions or want to collaborate, let us know — we love hearing from our users!"
     ]
   ],
   "entrytypeError": "Please select an entry type",

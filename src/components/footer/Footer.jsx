@@ -127,7 +127,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li>
                 <Link href="/" className="text-gray-600 dark:text-gray-300 hover:text-[#206645] dark:hover:text-green-400 transition-colors duration-300 flex items-center">
-                  <Map className="h-4 w-4 mr-2" /> {messages["homeTitle"]}
+                  <Map className="h-4 w-4 mr-2" /> {messages["homeLabel"]}
                 </Link>
               </li>
               <li>
@@ -141,11 +141,6 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/add-list/localFood" className="text-gray-600 dark:text-gray-300 hover:text-[#206645] dark:hover:text-green-400 transition-colors duration-300 flex items-center">
-                  <PlusCircle className="h-4 w-4 mr-2" /> {messages["addlistTitle"]}
-                </Link>
-              </li>
-              <li>
                 <Link href="/services" className="text-gray-600 dark:text-gray-300 hover:text-[#206645] dark:hover:text-green-400 transition-colors duration-300 flex items-center">
                   <BookOpen className="h-4 w-4 mr-2" /> {messages["termsofuseTitle"]}
                 </Link>
@@ -153,23 +148,32 @@ const Footer = () => {
             </ul>
           </motion.div>
 
-          {/* Eco Categories */}
+          {/* Services */}
           <motion.div variants={itemAnimation} className="space-y-6">
             <h3 className="text-lg font-semibold text-[#206645] dark:text-green-400">
-              {messages["categoriesTitle"]}
+              {messages["servicesTitle"]}
             </h3>
             <ul className="space-y-3">
-              {ecoCategories.map(cat => (
-                <li key={cat.label}>
-                  <Link
-                    href={cat.href}
-                    className="flex items-center text-gray-600 dark:text-gray-300 hover:text-[#206645] dark:hover:text-green-400 transition-colors duration-300"
-                  >
-                    <span className="mr-2">{cat.icon}</span>
-                    {cat.label}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link
+                  href="/#latest-reviews"
+                  className="flex items-center text-gray-600 dark:text-gray-300 hover:text-[#206645] dark:hover:text-green-400 transition-colors duration-300"
+                  scroll={true}
+                >
+                  <Heart className="mr-2 h-4 w-4" />
+                  {messages["latestreviewsTitle"] || "Latest Reviews"}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/#latest-promotions"
+                  className="flex items-center text-gray-600 dark:text-gray-300 hover:text-[#206645] dark:hover:text-green-400 transition-colors duration-300"
+                  scroll={true}
+                >
+                  <ShoppingBasket className="mr-2 h-4 w-4" />
+                  {messages["latestpromotionsTitle"] || "Promotions"}
+                </Link>
+              </li>
             </ul>
           </motion.div>
 
@@ -203,7 +207,7 @@ const Footer = () => {
           className="mt-12 text-center"
         >
           <p className="text-gray-600 dark:text-gray-400 text-sm flex items-center justify-center gap-1">
-            © {currentYear} Plantilo
+            © {currentYear} TastyService
             <Heart size={14} className="inline-block text-[#a66c44] mx-1" />
             {messages["copyboxContent"]}
           </p>

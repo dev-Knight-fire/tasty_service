@@ -148,8 +148,30 @@ const LatestReviews = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+      <div className="grid grid-cols-3 gap-4 py-8">
+        {[...Array(6)].map((_, idx) => (
+          <div
+            key={idx}
+            className="aspect-square border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 animate-pulse flex flex-col"
+          >
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-700" />
+              <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+            </div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gray-300 dark:bg-gray-700 rounded-full" />
+                <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+              </div>
+              <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
+            </div>
+            <div className="flex-1">
+              <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+              <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+              <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -211,8 +233,8 @@ const LatestReviews = () => {
                   
                   {/* Comment */}
                   {review.comment && (
-                    <p className="text-gray-700 dark:text-gray-300 text-sm mb-3 flex-1">
-                      {truncateComment(review.comment)}
+                    <p className="italic text-gray-700 dark:text-gray-300 text-sm mb-3 flex-1">
+                      {`"${truncateComment(review.comment)}"`}
                     </p>
                   )}
                   
@@ -222,7 +244,7 @@ const LatestReviews = () => {
                       <img
                         src={review.photos[0]}
                         alt="Review photo"
-                        className="w-full h-32 object-cover rounded-lg"
+                        className="w-full h-40 object-cover rounded-lg"
                       />
                     </div>
                   )}

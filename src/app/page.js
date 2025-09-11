@@ -1,5 +1,5 @@
 import Hero from "@/components/hero/Hero";
-import AboutUs from "@/components/aboutUsSection/AboutUs";
+import LatestPromotions from "@/components/promotionSection/LatestPromotions";
 import Services from "@/components/servicesSection/Services";
 import GreenBanner from "@/components/greenBanner/GreenBanner";
 
@@ -9,7 +9,7 @@ export default function Home() {
     <>
       <Hero />
       <Services/>
-      <AboutUs/>
+      <LatestPromotions/>
       <GreenBanner/>
     </>
   );
