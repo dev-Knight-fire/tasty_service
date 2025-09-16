@@ -2,21 +2,23 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 // import PleaseLogin from '../PleaseLogin/PleaseLogin';
-import { Loader, User, Home, Edit, Trash2, Eye, Save, X, Camera, Upload, RotateCcw } from 'lucide-react';
+import { Loader, User, Home, Edit, Trash2, Eye, Save, X, Camera, Upload, RotateCcw, Calendar } from 'lucide-react';
 import { db } from '@/firebase/firestore';
 import { storage } from '@/firebase/storage';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, deleteDoc, orderBy } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 // import { toast } from 'react-toastify';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import PromotionDetailModal from '@/components/promotionSection/PromotionDetailModal';
+import AddPromotionModal from '@/components/map/AddPromotionModal';
 
 const UserProfile = () => {
    const { user, loading } = useAuth();
    const router = useRouter();
    const [activeTab, setActiveTab] = useState('account');
    const [userData, setUserData] = useState(null);
-   const [userProperties, setUserProperties] = useState([]);
+   const [userPromotions, setUserPromotions] = useState([]);
    const [isEditing, setIsEditing] = useState(false);
    const [isLoading, setIsLoading] = useState(true);
    const [isSaving, setIsSaving] = useState(false);
@@ -32,8 +34,36 @@ const UserProfile = () => {
       isUploading: false,
       dragActive: false
    });
+   const [selectedPromotion, setSelectedPromotion] = useState(null);
+   const [showPromotionModal, setShowPromotionModal] = useState(false);
+   const [showEditPromotionModal, setShowEditPromotionModal] = useState(false);
    const fileInputRef = useRef(null);
    const dropZoneRef = useRef(null);
+
+   const openPromotionModal = (promotion) => {
+      setSelectedPromotion(promotion);
+      setShowPromotionModal(true);
+   };
+
+   const closePromotionModal = () => {
+      setShowPromotionModal(false);
+      setSelectedPromotion(null);
+   };
+
+   const openEditPromotionModal = (promotion) => {
+      setSelectedPromotion(promotion);
+      setShowEditPromotionModal(true);
+   };
+
+   const closeEditPromotionModal = () => {
+      setShowEditPromotionModal(false);
+      setSelectedPromotion(null);
+   };
+
+   const handleEditPromotionSubmit = ({ place, promotion }) => {
+      setUserPromotions(prev => prev.map(p => p.id === promotion.id ? { ...p, ...promotion, place } : p));
+      closeEditPromotionModal();
+   };
 
    // Fetch user data from Firestore
    const fetchUserData = async () => {
@@ -60,16 +90,34 @@ const UserProfile = () => {
       try {
          if (user?.email) {
             const promotionsRef = collection(db, 'promotions');
-            const q = query(promotionsRef, where('userId', '==', user.email));
+            // Sort by latest (descending by createdAt)
+            const q = query(
+               promotionsRef,
+               where('userId', '==', user.email),
+               orderBy('createdAt', 'desc')
+            );
             const querySnapshot = await getDocs(q);
-            const promotions = querySnapshot.docs.map(doc => ({
-               id: doc.id,
-               ...doc.data()
-            }));
-            setUserProperties(promotions);
+            const promotions = await Promise.all(
+               querySnapshot.docs.map(async (snap) => {
+                  const data = { id: snap.id, ...snap.data() };
+                  // Attach related place
+                  if (data.placeId) {
+                     try {
+                        const placeSnap = await getDoc(doc(db, 'places', data.placeId));
+                        if (placeSnap.exists()) {
+                           data.place = { id: placeSnap.id, ...placeSnap.data() };
+                        }
+                     } catch (placeErr) {
+                        console.error('Error fetching place for promotion:', placeErr);
+                     }
+                  }
+                  return data;
+               })
+            );
+            setUserPromotions(promotions);
          }
       } catch (error) {
-         console.error('Error fetching properties:', error);
+         console.error('Error fetching promotions:', error);
       }
    };
 
@@ -193,15 +241,21 @@ const UserProfile = () => {
       });
    };
 
-   // Delete property
-   const handleDeleteProperty = async (propertyId) => {
-      if (window.confirm('Are you sure you want to delete this property?')) {
-         try {
-            await deleteDoc(doc(db, 'properties', propertyId));
-            setUserProperties(prev => prev.filter(p => p.id !== propertyId));
-         } catch (error) {
-            console.error('Error deleting property:', error);
-         }
+   // Toggle promotion status
+   const handleTogglePromotionStatus = async (propertyId, currentStatus) => {
+      try {
+         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+         await updateDoc(doc(db, 'promotions', propertyId), {
+            status: newStatus,
+            updatedAt: new Date()
+         });
+         
+         // Update local state
+         setUserPromotions(prev => prev.map(p => 
+            p.id === propertyId ? { ...p, status: newStatus } : p
+         ));
+      } catch (error) {
+         console.error('Error updating promotion status:', error);
       }
    };
 
@@ -519,7 +573,7 @@ const UserProfile = () => {
                            </Link>
                         </div>
 
-                        {userProperties.length === 0 ? (
+                        {userPromotions.length === 0 ? (
                            <div className="text-center py-12">
                               <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                               <h4 className="text-xl font-semibold text-gray-600 mb-2">No Properties Yet</h4>
@@ -533,51 +587,75 @@ const UserProfile = () => {
                               </Link>
                            </div>
                         ) : (
-                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                              {userProperties.map((property) => (
-                                 <div key={property.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <div className="relative mb-4">
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                              {userPromotions.map((property) => (
+                                 <div
+                                    key={property.id}
+                                    className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
+                                 >
+                                    {/* Image */}
+                                    <div className="relative h-48 w-full">
                                        <img
                                           src={property.photos?.[0] || "placeholder.svg"}
-                                          alt={property.title}
-                                          className="w-full h-48 object-cover rounded-lg"
+                                          alt={property.title || 'Promotion image'}
+                                          className="h-48 w-full object-cover"
                                        />
-                                       <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-1 rounded text-sm font-bold">
-                                          ${property.price?.toLocaleString()}
-                                       </div>
                                     </div>
 
-                                    <h4 className="font-semibold text-gray-800 mb-2 line-clamp-1">
-                                       {property.title}
-                                    </h4>
-                                    <p className="text-gray-600 text-sm mb-3">
-                                       {property.location}
-                                    </p>
+                                    {/* Content */}
+                                    <div className="p-6">
+                                       <h4 className="text-[15px] font-semibold text-gray-900 mb-2 line-clamp-2">
+                                          {property.description}
+                                       </h4>
+                                       {property.location && (
+                                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                                             {property.location}
+                                          </p>
+                                       )}
 
-                                    <div className="flex items-center justify-between">
-                                       <div className="flex space-x-2">
-                                          <Link
-                                             href={`/singleproperty/${property.id}`}
-                                             className="flex items-center px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors"
+                                       {/* Meta row (date) */}
+                                       {(property.startDateTime || property.endDateTime) && (
+                                          <div className="flex items-center gap-4 text-sm mb-4">
+                                             {property.endDateTime && (
+                                                <div className="flex items-center gap-1 text-gray-500">
+                                                   <Calendar className="h-4 w-4" />
+                                                   {new Date(property.endDateTime?.toDate?.() || property.endDateTime).toLocaleDateString()}
+                                                </div>
+                                             )}
+                                          </div>
+                                       )}
+
+                                       {/* Actions */}
+                                       <div className="flex items-center justify-between">
+                                          <div className="flex space-x-2">
+                                             <button
+                                                type="button"
+                                                onClick={() => openPromotionModal(property)}
+                                                className="flex items-center px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors"
+                                             >
+                                                <Eye className="w-3 h-3 mr-1" />
+                                                View
+                                             </button>
+                                             <Link
+                                                href={`#`}
+                                                onClick={(e) => { e.preventDefault(); openEditPromotionModal(property); }}
+                                                className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-sm hover:bg-yellow-200 transition-colors"
+                                             >
+                                                <Edit className="w-3 h-3 mr-1" />
+                                                Edit
+                                             </Link>
+                                          </div>
+                                          <button
+                                             onClick={() => handleTogglePromotionStatus(property.id, property.status)}
+                                             className={`flex items-center px-3 py-1 rounded text-sm transition-colors ${
+                                                property.status === 'active' 
+                                                   ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                                                   : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                             }`}
                                           >
-                                             <Eye className="w-3 h-3 mr-1" />
-                                             View
-                                          </Link>
-                                          <Link
-                                             href={`/addproperty/${property.id}`}
-                                             className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-sm hover:bg-yellow-200 transition-colors"
-                                          >
-                                             <Edit className="w-3 h-3 mr-1" />
-                                             Edit
-                                          </Link>
+                                             {property.status === 'active' ? 'Deactivate' : 'Activate'}
+                                          </button>
                                        </div>
-                                       <button
-                                          onClick={() => handleDeleteProperty(property.id)}
-                                          className="flex items-center px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors"
-                                       >
-                                          <Trash2 className="w-3 h-3 mr-1" />
-                                          Delete
-                                       </button>
                                     </div>
                                  </div>
                               ))}
@@ -704,6 +782,28 @@ const UserProfile = () => {
                   </div>
                </div>
             </div>
+         )}
+
+         {/* Promotion Detail Modal */}
+         {showPromotionModal && selectedPromotion && (
+            <PromotionDetailModal
+               promotion={selectedPromotion}
+               onClose={closePromotionModal}
+            />
+         )}
+
+         {/* Promotion Edit Modal */}
+         {showEditPromotionModal && selectedPromotion && (
+            <AddPromotionModal
+               isOpen={showEditPromotionModal}
+               onClose={closeEditPromotionModal}
+               location={{ lat: selectedPromotion?.place?.lat, lng: selectedPromotion?.place?.lng }}
+               restaurant={selectedPromotion?.place ? { id: selectedPromotion.place.id, venueName: selectedPromotion.place.venueName, lat: selectedPromotion.place.lat, lng: selectedPromotion.place.lng } : null}
+               mode="edit"
+               initialPromotion={selectedPromotion}
+               initialPlace={selectedPromotion?.place || null}
+               onSubmit={handleEditPromotionSubmit}
+            />
          )}
       </div>
    );

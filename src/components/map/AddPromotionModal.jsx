@@ -1,28 +1,40 @@
 "use client";
-import { serverTimestamp, addDoc, collection } from "firebase/firestore";
+import { serverTimestamp, addDoc, collection, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage, db } from "../../firebase/firestore";
 import React, { useState } from "react";
 import { FaTimes, FaCamera, FaMapMarkerAlt, FaPhone, FaCalendarAlt, FaClock } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext";
 
-const AddPromotionModal = ({ isOpen, onClose, location, restaurant, onSubmit }) => {
+const AddPromotionModal = ({ isOpen, onClose, location, restaurant, onSubmit, mode = "add", initialPromotion = null, initialPlace = null }) => {
   const { user } = useAuth();
-  const [venueName, setVenueName] = useState(restaurant?.venueName || "");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [description, setDescription] = useState("");
-  const [startDateTime, setStartDateTime] = useState("");
-  const [endDateTime, setEndDateTime] = useState("");
-  const [photos, setPhotos] = useState([]);
+  const [venueName, setVenueName] = useState(initialPlace?.venueName || restaurant?.venueName || "");
+  const [phoneNumber, setPhoneNumber] = useState(initialPromotion?.phoneNumber || "");
+  const [description, setDescription] = useState(initialPromotion?.description || "");
+  const [startDateTime, setStartDateTime] = useState(initialPromotion?.startDateTime ? formatInputDateTime(initialPromotion.startDateTime) : "");
+  const [endDateTime, setEndDateTime] = useState(initialPromotion?.endDateTime ? formatInputDateTime(initialPromotion.endDateTime) : "");
+  const [photos, setPhotos] = useState(initialPromotion?.photos || []);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Update venue name when restaurant prop changes
   React.useEffect(() => {
-    if (restaurant?.venueName) {
+    if (restaurant?.venueName && !initialPlace?.venueName) {
       setVenueName(restaurant.venueName);
     }
-  }, [restaurant]);
+  }, [restaurant, initialPlace]);
+
+  function formatInputDateTime(value) {
+    const d = value?.toDate ? value.toDate() : new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  }
 
   const handlePhotoUpload = async (files) => {
     if (files.length === 0) return;
@@ -71,54 +83,93 @@ const AddPromotionModal = ({ isOpen, onClose, location, restaurant, onSubmit }) 
     setLoading(true);
     
     try {
-      let placeData, placeDocRef;
+      if (mode === "edit" && initialPromotion) {
+        // Use existing place
+        const placeId = initialPromotion.placeId || restaurant?.id || initialPlace?.id;
+        if (placeId && venueName?.trim()) {
+          try {
+            await updateDoc(doc(db, "places", placeId), { venueName: venueName.trim() });
+          } catch (err) {
+            console.error("Failed to update place name:", err);
+          }
+        }
 
-      // If restaurant is provided, use existing place
-      if (restaurant) {
-        placeData = restaurant;
-        placeDocRef = { id: restaurant.id };
-        console.log("Using existing place:", restaurant.id);
+        // Update promotion
+        const promotionId = initialPromotion.id;
+        const updatedPromotion = {
+          description: description.trim(),
+          startDateTime: new Date(startDateTime),
+          endDateTime: new Date(endDateTime),
+          photos: photos,
+          phoneNumber: phoneNumber.trim(),
+          status: initialPromotion.status || "active",
+        };
+        await updateDoc(doc(db, "promotions", promotionId), updatedPromotion);
+
+        onSubmit({
+          place: {
+            id: placeId,
+            ...(initialPlace || restaurant || {}),
+            venueName: venueName.trim(),
+          },
+          promotion: {
+            id: promotionId,
+            ...initialPromotion,
+            ...updatedPromotion,
+            placeId,
+            userId: initialPromotion.userId || user?.email || "anonymous",
+          }
+        });
       } else {
-        // Create new place if no restaurant provided
-        placeData = {
-          venueName: venueName.trim(),
-          lat: location.lat,
-          lng: location.lng,
+        let placeData, placeDocRef;
+
+        // If restaurant is provided, use existing place
+        if (restaurant) {
+          placeData = restaurant;
+          placeDocRef = { id: restaurant.id };
+          console.log("Using existing place:", restaurant.id);
+        } else {
+          // Create new place if no restaurant provided
+          placeData = {
+            venueName: venueName.trim(),
+            lat: location.lat,
+            lng: location.lng,
+            createdAt: serverTimestamp(),
+            owner: user?.email || "anonymous"
+          };
+
+          placeDocRef = await addDoc(collection(db, "places"), placeData);
+          console.log("Place added with ID: ", placeDocRef.id);
+        }
+
+        // Save the promotion with placeId reference
+        const promotionData = {
+          placeId: placeDocRef.id, // Reference to the place document
+          description: description.trim(),
+          startDateTime: new Date(startDateTime), // Use actual datetime from form
+          endDateTime: new Date(endDateTime), // Use actual datetime from form
+          photos: photos,
+          phoneNumber: phoneNumber.trim(),
+          userId: user?.email || "anonymous", // Using user email as userId
           createdAt: serverTimestamp(),
-          owner: user?.email || "anonymous"
+          status: "active"
         };
 
-        placeDocRef = await addDoc(collection(db, "places"), placeData);
-        console.log("Place added with ID: ", placeDocRef.id);
+        const promotionDocRef = await addDoc(collection(db, "promotions"), promotionData);
+        console.log("Promotion added with ID: ", promotionDocRef.id);
+        
+        // Call onSubmit with both place and promotion data
+        onSubmit({
+          place: {
+            id: placeDocRef.id,
+            ...placeData
+          },
+          promotion: {
+            id: promotionDocRef.id,
+            ...promotionData
+          }
+        });
       }
-
-      // Save the promotion with placeId reference
-      const promotionData = {
-        placeId: placeDocRef.id, // Reference to the place document
-        description: description.trim(),
-        startDateTime: new Date(startDateTime), // Use actual datetime from form
-        endDateTime: new Date(endDateTime), // Use actual datetime from form
-        photos: photos,
-        phoneNumber: phoneNumber.trim(),
-        userId: user?.email || "anonymous", // Using user email as userId
-        createdAt: serverTimestamp(),
-        status: "active"
-      };
-
-      const promotionDocRef = await addDoc(collection(db, "promotions"), promotionData);
-      console.log("Promotion added with ID: ", promotionDocRef.id);
-      
-      // Call onSubmit with both place and promotion data
-      onSubmit({
-        place: {
-          id: placeDocRef.id,
-          ...placeData
-        },
-        promotion: {
-          id: promotionDocRef.id,
-          ...promotionData
-        }
-      });
       
       // Reset form
       setPhoneNumber("");
@@ -143,7 +194,7 @@ const AddPromotionModal = ({ isOpen, onClose, location, restaurant, onSubmit }) 
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center space-x-2">
             <FaMapMarkerAlt className="text-blue-600" />
-            <span>Add Promotion</span>
+            <span>{mode === 'edit' ? 'Edit Promotion' : 'Add Promotion'}</span>
           </h2>
           <button
             onClick={onClose}
@@ -160,13 +211,13 @@ const AddPromotionModal = ({ isOpen, onClose, location, restaurant, onSubmit }) 
               Location
             </h3>
             <p className="text-gray-600 dark:text-gray-300">
-              Lat: {restaurant?.lat?.toFixed(6) || location?.lat?.toFixed(6)}, 
-              Lng: {restaurant?.lng?.toFixed(6) || location?.lng?.toFixed(6)}
+              Lat: {restaurant?.lat?.toFixed(6) || initialPlace?.lat?.toFixed(6) || location?.lat?.toFixed(6)}, 
+              Lng: {restaurant?.lng?.toFixed(6) || initialPlace?.lng?.toFixed(6) || location?.lng?.toFixed(6)}
             </p>
           </div>
 
           {/* Venue Name - Only show if not pre-selected */}
-          {!restaurant && (
+          {!restaurant && !initialPlace && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Venue Name *
@@ -183,14 +234,19 @@ const AddPromotionModal = ({ isOpen, onClose, location, restaurant, onSubmit }) 
           )}
 
           {/* Pre-selected Venue Name Display */}
-          {restaurant && (
+          {(restaurant || initialPlace) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Venue Name
               </label>
-              <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
-                {restaurant.venueName}
-              </div>
+              <input
+                type="text"
+                value={venueName}
+                onChange={(e) => setVenueName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Enter venue name"
+                required
+              />
             </div>
           )}
 
@@ -324,7 +380,7 @@ const AddPromotionModal = ({ isOpen, onClose, location, restaurant, onSubmit }) 
               disabled={loading}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Adding Promotion...' : 'Add Promotion'}
+              {loading ? (mode === 'edit' ? 'Saving Changes...' : 'Adding Promotion...') : (mode === 'edit' ? 'Save Changes' : 'Add Promotion')}
             </button>
           </div>
         </form>
