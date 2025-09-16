@@ -17,6 +17,7 @@ import {
   X
 } from "lucide-react";
 import { useLang } from "@/contexts/LangContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * InfluencersGrid.jsx
@@ -41,6 +42,7 @@ const Influencers = () => {
   const [sortBy, setSortBy] = useState("newest"); // 'newest' | 'location'
   const [videoOpen, setVideoOpen] = useState(false);
   const [activeVideo, setActiveVideo] = useState(null);
+  const { user } = useAuth();
 
   // ---- Realistic influencer profiles (fictional people, real avatar images) ----
   const influencerProfiles = [
@@ -326,7 +328,7 @@ const Influencers = () => {
       }
     };
     initializeData();
-  });
+  }, [user]);
 
   // Sorting
   const sortedContent = [...influencerContent].sort((a, b) => {
