@@ -14,7 +14,10 @@ import {
   ChevronDown,
   MessagesSquare,
   Settings,
-  Key
+  Key,
+  EyeIcon,
+  BookCheck,
+  NewspaperIcon
 } from "lucide-react";
 import { useLang } from "@/contexts/LangContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -140,23 +143,15 @@ const Header = () => {
                       </span>
                     </Link>
 
-                    {user.setList && user.email !== "plantilo@proton.me" ? (
+                    {user.email && user.email !== "plantilo@proton.me" && (
                       <Link
                         href="/profile"
                         className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
                       >
-                        <User size={16} className="text-[#0077C8]" />
+                        <NewspaperIcon size={16} className="text-[#0077C8]" />
                         <span>
-                          {messages["profileTitle"]}({user.role})
+                          {messages["myprofileTitle"]}
                         </span>
-                      </Link>
-                    ) : (
-                      <Link
-                        href="/add-list/localFood"
-                        className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-                      >
-                        <FilePlus size={16} className="text-[#0077C8]" />
-                        <span>{messages["addlistTitle"]}</span>
                       </Link>
                     )}
 
@@ -165,8 +160,18 @@ const Header = () => {
                         href="/admin"
                         className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
                       >
-                        <Users size={16} className="text-[#0077C8]" />
-                        <span>{messages["managelistTitle"]}</span>
+                        <BookCheck size={16} className="text-[#0077C8]" />
+                        <span>{messages["allpromotionsTitle"]}</span>
+                      </Link>
+                    )}
+
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-2 px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        <EyeIcon size={16} className="text-[#0077C8]" />
+                        <span>{messages["allreviewsTitle"]}</span>
                       </Link>
                     )}
 

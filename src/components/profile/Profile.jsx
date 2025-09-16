@@ -1,576 +1,712 @@
-"use client";
+"use client"
+import React, { useEffect, useState, useRef } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+// import PleaseLogin from '../PleaseLogin/PleaseLogin';
+import { Loader, User, Home, Edit, Trash2, Eye, Save, X, Camera, Upload, RotateCcw } from 'lucide-react';
+import { db } from '@/firebase/firestore';
+import { storage } from '@/firebase/storage';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+// import { toast } from 'react-toastify';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { doc, getDoc, updateDoc, query, where, collection, getDocs } from "firebase/firestore";
-import { db } from "@/firebase/firestore";
-import { useAuth } from "@/contexts/AuthContext";
-import { useLang } from "@/contexts/LangContext";
-import Loading from "@/app/loading";
-import {
-  MapPin,
-  Phone,
-  Mail,
-  Clock,
-  Star,
-  Edit,
-  Camera,
-  Users,
-  Award,
-  Calendar,
-  DollarSign,
-  MessageCircle,
-  Pencil,
-  Tag,
-  Tags,
-  Plus,
-  Trash2,
-} from "lucide-react";
-import toast from "react-hot-toast";
-import EditProfileModal from "./EditProfileModal";
-import EditDescriptionModal from "./EditDescriptionModal";
-import DeleteConfirmModal from "./DeleteConfirmModal";
-import EditPhotosModal from "./EditPhotosModal";
-import MapLocationPicker from "./MapLocationPicker";
+const UserProfile = () => {
+   const { user, loading } = useAuth();
+   const router = useRouter();
+   const [activeTab, setActiveTab] = useState('account');
+   const [userData, setUserData] = useState(null);
+   const [userProperties, setUserProperties] = useState([]);
+   const [isEditing, setIsEditing] = useState(false);
+   const [isLoading, setIsLoading] = useState(true);
+   const [isSaving, setIsSaving] = useState(false);
+   const [editForm, setEditForm] = useState({
+      username: '',
+      phone: '',
+      photoURL: ''
+   });
+   const [photoEditor, setPhotoEditor] = useState({
+      isOpen: false,
+      selectedFile: null,
+      preview: null,
+      isUploading: false,
+      dragActive: false
+   });
+   const fileInputRef = useRef(null);
+   const dropZoneRef = useRef(null);
 
-export default function ProfileComponent() {
-  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
-  const [userData, setUserData] = useState(null);
-  const { user, loading, switchAvatar } = useAuth();
-  const { messages } = useLang();
-  const router = useRouter();
-  const [openProfileModal, setOpenProfileModal] = useState(false);
-  const [openDescriptionModal, setOpenDescriptionModal] = useState(false);
-  const [openReviewModal, setOpenReviewModal] = useState(false);
-  const [editReviewIndex, setEditReviewIndex] = useState(null);
-  const [openDeleteReviewModal, setOpenDeleteReviewModal] = useState(false);
-  const [openProfessionalDetail, setOpenProfessionalDetail] = useState(false);
-  const [openPhotosModal, setOpenPhotosModal] = useState(false);
-  const [location, setLocation] = useState([21.0122, 52.2297]); // [lng, lat]
-  const [locationEdit, setLocationEdit] = useState(false);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (user?.email) {
-        try {
-          const q = query(collection(db, "lists"), where("email", "==", user.email));
-          const querySnapshot = await getDocs(q);
-          const userDocSnap = querySnapshot.docs[0];
-          console.log("User data fetched:", userDocSnap.data());
-          if (userDocSnap.exists()) {
-            setUserData(userDocSnap.data());
-            setLocation(userDocSnap.data().location);
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
+   // Fetch user data from Firestore
+   const fetchUserData = async () => {
+      try {
+         if (user?.email) {
+            const userDoc = await getDoc(doc(db, 'users', user.email));
+            if (userDoc.exists()) {
+               const data = userDoc.data();
+               setUserData(data);
+               setEditForm({
+                  username: data.username || '',
+                  phone: data.phone || '',
+                  photoURL: data.photoURL || ''
+               });
+            }
+         }
+      } catch (error) {
+         console.error('Error fetching user data:', error);
       }
-    };
-    fetchUser();
-  }, [user]);
+   };
 
-  useEffect(() => {
-    if (!loading && !user.email) {
+   // Fetch user properties
+   const fetchUserPromotions = async () => {
+      try {
+         if (user?.email) {
+            const promotionsRef = collection(db, 'promotions');
+            const q = query(promotionsRef, where('userId', '==', user.email));
+            const querySnapshot = await getDocs(q);
+            const promotions = querySnapshot.docs.map(doc => ({
+               id: doc.id,
+               ...doc.data()
+            }));
+            setUserProperties(promotions);
+         }
+      } catch (error) {
+         console.error('Error fetching properties:', error);
+      }
+   };
+
+   useEffect(() => {
+      if (user?.email) {
+         Promise.all([fetchUserData(), fetchUserPromotions()])
+            .finally(() => setIsLoading(false));
+      }
+   }, [user, loading]);
+
+   // Save user data
+   const handleSaveUserData = async () => {
+      try {
+         setIsSaving(true);
+         const userRef = doc(db, 'users', user.email);
+         await updateDoc(userRef, {
+            username: editForm.username,
+            phone: editForm.phone,
+            photoURL: editForm.photoURL,
+            updatedAt: new Date()
+         });
+
+         setUserData(prev => ({ ...prev, ...editForm }));
+         setIsEditing(false);
+      } catch (error) {
+         console.error('Error updating user data:', error);
+      } finally {
+         setIsSaving(false);
+      }
+   };
+
+   // Photo Editor Functions
+   const handleFileSelect = (file) => {
+      if (file && file.type.startsWith('image/')) {
+         const reader = new FileReader();
+         reader.onload = (e) => {
+            setPhotoEditor(prev => ({
+               ...prev,
+               selectedFile: file,
+               preview: e.target.result
+            }));
+         };
+         reader.readAsDataURL(file);
+      }
+   };
+
+   const handleDragOver = (e) => {
+      e.preventDefault();
+      setPhotoEditor(prev => ({ ...prev, dragActive: true }));
+   };
+
+   const handleDragLeave = (e) => {
+      e.preventDefault();
+      setPhotoEditor(prev => ({ ...prev, dragActive: false }));
+   };
+
+   const handleDrop = (e) => {
+      e.preventDefault();
+      setPhotoEditor(prev => ({ ...prev, dragActive: false }));
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+         handleFileSelect(files[0]);
+      }
+   };
+
+   const uploadPhoto = async () => {
+      if (!photoEditor.selectedFile) {
+         return;
+      }
+
+      try {
+         setPhotoEditor(prev => ({ ...prev, isUploading: true }));
+
+         // Create a unique filename
+         const timestamp = Date.now();
+         const fileName = `profile-photos/${user.email}/${timestamp}_${photoEditor.selectedFile.name}`;
+         const storageRef = ref(storage, fileName);
+
+         // Upload the file
+         const snapshot = await uploadBytes(storageRef, photoEditor.selectedFile);
+         const downloadURL = await getDownloadURL(snapshot.ref);
+
+         // Update user data
+         const userRef = doc(db, 'users', user.email);
+         await updateDoc(userRef, {
+            photoURL: downloadURL,
+            updatedAt: new Date()
+         });
+
+         // Update local state
+         setUserData(prev => ({ ...prev, photoURL: downloadURL }));
+         setEditForm(prev => ({ ...prev, photoURL: downloadURL }));
+
+         // Close editor
+         setPhotoEditor({
+            isOpen: false,
+            selectedFile: null,
+            preview: null,
+            isUploading: false,
+            dragActive: false
+         });
+
+      } catch (error) {
+         console.error('Error uploading photo:', error);
+      } finally {
+         setPhotoEditor(prev => ({ ...prev, isUploading: false }));
+      }
+   };
+
+   const openPhotoEditor = () => {
+      setPhotoEditor(prev => ({ ...prev, isOpen: true }));
+   };
+
+   const closePhotoEditor = () => {
+      setPhotoEditor({
+         isOpen: false,
+         selectedFile: null,
+         preview: null,
+         isUploading: false,
+         dragActive: false
+      });
+   };
+
+   // Delete property
+   const handleDeleteProperty = async (propertyId) => {
+      if (window.confirm('Are you sure you want to delete this property?')) {
+         try {
+            await deleteDoc(doc(db, 'properties', propertyId));
+            setUserProperties(prev => prev.filter(p => p.id !== propertyId));
+         } catch (error) {
+            console.error('Error deleting property:', error);
+         }
+      }
+   };
+
+   if (!user?.email && !loading) {
       router.push("/signin");
-    }
-  }, [user, loading, router]);
+   }
 
-  if (!userData)
-    return (
-      <>
-        <Loading />
-      </>
-    );
-
-  const updateAvatar = async (newAvatarIndex) => {
-    try {
-      const q = query(collection(db, "lists"), where("email", "==", user.email));
-      const querySnapshot = await getDocs(q);
-      const userDocSnap = querySnapshot.docs[0];
-      const userDocRef = userDocSnap.ref;
-      await updateDoc(userDocRef, {
-        avatar: newAvatarIndex,
-      });
-      toast.success("Avatar updated successfully!");
-      switchAvatar(userData.photos[newAvatarIndex]);
-      console.log("Avatar updated successfully");
-    } catch (error) {
-      toast.error("Failed to update avatar.");
-      console.error("Error updating avatar:", error);
-    }
-  };
-
-  const handleEditProfileSave = async (updatedFields) => {
-    try {
-      const q = query(collection(db, "lists"), where("email", "==", user.email));
-      const querySnapshot = await getDocs(q);
-      const userDocSnap = querySnapshot.docs[0];
-      const userDocRef = userDocSnap.ref;
-      await updateDoc(userDocRef, {
-        ...updatedFields,
-      });
-      toast.success("Profile updated successfully!");
-      setUserData((prev) => ({
-        ...prev,
-        ...updatedFields,
-      }));
-    } catch (error) {
-      toast.error("Failed to update profile.");
-      console.error("Error updating profile:", error);
-    }
-  };
-
-  const handleEditDescriptionSave = async (newDescription) => {
-    try {
-      const q = query(collection(db, "lists"), where("email", "==", user.email));
-      const querySnapshot = await getDocs(q);
-      const userDocSnap = querySnapshot.docs[0];
-      const userDocRef = userDocSnap.ref;
-      await updateDoc(userDocRef, {
-        description: newDescription,
-      });
-      toast.success("Profile updated successfully!");
-      setUserData((prev) => ({
-        ...prev,
-        description: newDescription,
-      }));
-    } catch (error) {
-      toast.error("Failed to update profile.");
-      console.error("Error updating profile:", error);
-    }
-  };
-
-  const handleEditReview = async (newReview) => {
-    try {
-      const q = query(collection(db, "lists"), where("email", "==", user.email));
-      const querySnapshot = await getDocs(q);
-      const userDocSnap = querySnapshot.docs[0];
-      const userDocRef = userDocSnap.ref;
-      await updateDoc(userDocRef, {
-        reviews: [...userData.reviews, newReview],
-      });
-      toast.success("Profile updated successfully!");
-      setUserData((prev) => ({
-        ...prev,
-        reviews: [...userData.reviews, newReview],
-      }));
-    } catch (error) {
-      toast.error("Failed to update profile.");
-      console.error("Error updating profile:", error);
-    }
-  };
-
-  const handleReviewAdd = () => {
-    setEditReviewIndex(null);
-    setOpenReviewModal(true);
-  };
-
-  const handleReviewEdit = (index) => {
-    setEditReviewIndex(index);
-    setOpenReviewModal(true);
-  };
-
-  const handleDeleteReview = async (index) => {
-    try {
-      const q = query(collection(db, "lists"), where("email", "==", user.email));
-      const querySnapshot = await getDocs(q);
-      const userDocSnap = querySnapshot.docs[0];
-      const userDocRef = userDocSnap.ref;
-
-      // Create a new array without the deleted review (do NOT use splice here)
-      const newReviews = userData.reviews.filter((_, i) => i !== index);
-
-      await updateDoc(userDocRef, {
-        reviews: newReviews,
-      });
-
-      toast.success("Profile updated successfully!");
-      setUserData((prev) => ({
-        ...prev,
-        reviews: newReviews,
-      }));
-    } catch (error) {
-      toast.error("Failed to update profile.");
-      console.error("Error updating profile:", error);
-    }
-  };
-
-  const handleEditPhotosSave = async (newPhotos) => {
-    try {
-      toast.success("Profile updated successfully!");
-      setUserData({ ...userData, photos: newPhotos });
-    } catch (error) {
-      toast.error("Failed to update profile.");
-      console.error("Error updating profile:", error);
-    }
-  };
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case "caregiver":
-        return "\u{1F468}\u{200D}\u{2695}\u{FE0F}";
-      case "nurse":
-        return "\u{1F469}\u{200D}\u{2695}\u{FE0F}";
-      case "careHome":
-        return "\u{1F3E0}";
-      case "transport":
-        return "\u{1F691}";
-      case "store":
-        return "\u{1F6D2}";
-      case "volunteer":
-        return "\u{1F91D}";
-      case "institution":
-        return "\u{1F3DB}";
-      default:
-        return "\u{1F464}";
-    }
-  };
-
-  const getTypeLabel = (type) => {
-    switch (type) {
-      case "caregiver":
-        return messages["caregiverTitle"];
-      case "nurse":
-        return messages["nurseTitle"];
-      case "careHome":
-        return messages["carehomeTitle"];
-      case "transport":
-        return messages["transportTitle"];
-      case "store":
-        return messages["seniorstoreTitle"];
-      case "volunteer":
-        return messages["volunteerTitle"];
-      case "institution":
-        return messages["findinstitutionTitle"];
-      default:
-        return "Profile";
-    }
-  };
-
-  const renderStars = (rating) =>
-    Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`w-4 h-4 ${
-          i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-        }`}
-      />
-    ));
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <Card className="overflow-hidden shadow-xl rounded-2xl border border-gray-200">
-          {/* Banner Section */}
-          <div className="relative h-40 bg-gradient-to-r from-[#206645] to-[#2d8a5f]">
-            <div className="absolute inset-0 bg-black/20" />
-          </div>
-
-          {/* Profile Content */}
-          <CardContent className="relative -mt-20 pt-0 pb-6 px-6">
-            <div className="flex flex-col md:flex-row items-start md:items-end gap-6">
-              {/* Avatar Section */}
-              <div className="relative">
-                <Avatar className="w-36 h-36 border-4 border-white shadow-lg">
-                  <AvatarImage
-                    src={
-                      userData.photos?.[userData.avatar] || "/placeholder.svg"
-                    }
-                    alt={userData.name}
-                  />
-                  <AvatarFallback className="text-3xl bg-[#206645] text-white">
-                    {userData.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  size="sm"
-                  className="absolute bottom-0 right-0 rounded-full w-9 h-9 p-0 bg-[#206645] hover:bg-[#185536]"
-                >
-                  <Camera className="w-4 h-4 text-white" />
-                </Button>
-              </div>
-
-              {/* Info Section */}
-              <div className="flex-1 space-y-4 mt-4 md:mt-0">
-                <div className="flex items-center justify-between flex-wrap">
-                  <div>
-                    <h1 className="text-4xl font-extrabold text-white mb-1">
-                      {userData.name}
-                    </h1>
-                    <Badge className="bg-[#206645]/10 text-white border border-[#206645]/20 text-base px-3 py-1">
-                      <span className="mr-1">
-                        {getTypeIcon(userData.entryType)}
-                      </span>
-                      {getTypeLabel(userData.entryType)}
-                    </Badge>
+   if (loading || isLoading) {
+      return (
+         <div className="min-h-screen bg-gradient-to-b from-green-50 to-[#8B4513]/10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+               <div className="flex flex-col lg:flex-row gap-8">
+                  {/* Sidebar skeleton */}
+                  <div className="lg:w-80">
+                     <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
+                        <div className="h-7 w-32 bg-gray-200 rounded mb-6" />
+                        <div className="space-y-2">
+                           <div className="h-10 w-full bg-gray-100 rounded" />
+                           <div className="h-10 w-full bg-gray-100 rounded" />
+                        </div>
+                     </div>
                   </div>
-                  <Button
-                    size="lg"
-                    className="bg-[#206645] text-white hover:bg-[#185536] font-semibold shadow-md mt-4 md:mt-0"
-                    onClick={() => setOpenProfileModal(true)}
-                  >
-                    <Edit className="w-5 h-5 mr-2" />
-                    {messages["editprofileTitle"]}
-                  </Button>
-                  <EditProfileModal
-                    open={openProfileModal}
-                    onClose={() => setOpenProfileModal(false)}
-                    initialValues={{
-                      city: userData.city || "",
-                      address: userData.address || "",
-                      phone: userData.phone || "",
-                      email: userData.email || "",
-                    }}
-                    onSave={handleEditProfileSave}
-                  />
-                </div>
 
-                <div className="flex flex-wrap gap-4 text-base text-gray-700">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    {userData.address}, {userData.city}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-5 h-5" />
-                    {userData.phone}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-5 h-5" />
-                    {userData.email}
-                  </div>
-                </div>
+                  {/* Main content skeleton */}
+                  <div className="flex-1">
+                     {/* Account card */}
+                     <div className="bg-white rounded-xl shadow-lg p-8">
+                        <div className="flex items-center justify-between mb-6">
+                           <div className="h-7 w-40 bg-gray-200 rounded" />
+                           <div className="h-9 w-28 bg-gray-100 rounded" />
+                        </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex">{renderStars(5)}</div>
-                  <span className="text-base text-gray-700 font-medium">
-                    5.0 ({userData.reviews?.length || 0}{" "}
-                    {messages["reviewsTitle"]})
-                  </span>
-                </div>
-              </div>
+                        <div className="space-y-6">
+                           {/* Profile row */}
+                           <div className="flex items-center space-x-6">
+                              <div className="h-24 w-24 rounded-full bg-gray-200" />
+                              <div className="space-y-3">
+                                 <div className="h-5 w-48 bg-gray-100 rounded" />
+                                 <div className="h-4 w-32 bg-gray-100 rounded" />
+                              </div>
+                           </div>
+
+                           {/* Info grid */}
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="h-16 bg-gray-50 border border-gray-200 rounded-lg" />
+                              <div className="h-16 bg-gray-50 border border-gray-200 rounded-lg" />
+                              <div className="h-16 bg-gray-50 border border-gray-200 rounded-lg" />
+                              <div className="h-16 bg-gray-50 border border-gray-200 rounded-lg" />
+                           </div>
+                        </div>
+                     </div>
+
+                     {/* Properties card */}
+                     <div className="bg-white rounded-xl shadow-lg p-8 mt-8">
+                        <div className="flex items-center justify-between mb-6">
+                           <div className="h-7 w-40 bg-gray-200 rounded" />
+                           <div className="h-9 w-32 bg-gray-100 rounded" />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                           {[0,1,2].map((i) => (
+                              <div key={i} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                 <div className="h-48 w-full bg-gray-200 rounded-lg mb-4" />
+                                 <div className="h-5 w-3/4 bg-gray-100 rounded mb-2" />
+                                 <div className="h-4 w-1/2 bg-gray-100 rounded mb-4" />
+                                 <div className="flex items-center justify-between">
+                                    <div className="h-8 w-24 bg-green-100 rounded" />
+                                    <div className="h-8 w-20 bg-red-100 rounded" />
+                                 </div>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+               </div>
             </div>
-          </CardContent>
-        </Card>
+         </div>
+      );
+   }
 
-        {/* Additional cards (About, Professional Details, Reviews, etc.) go here as in previous code */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* About Section */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between w-full">
-                  <CardTitle className="flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-[#206645]" />
-                    {messages["descriptionTitle"]}
-                  </CardTitle>
-                  <button
-                    type="button"
-                    className="p-2 rounded bg-gray-300 hover:bg-gray-100"
-                    aria-label="Edit"
-                    onClick={() => setOpenDescriptionModal(true)}
-                  >
-                    <Pencil className="w-4 h-4 text-gray-500" />
-                  </button>
-                  <EditDescriptionModal
-                    open={openDescriptionModal}
-                    onClose={() => setOpenDescriptionModal(false)}
-                    initialValue={userData.description}
-                    onSave={handleEditDescriptionSave}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 leading-relaxed">
-                  {userData.description}
-                </p>
-              </CardContent>
-            </Card>
+   return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-[#8B4513]/10">
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex flex-col lg:flex-row gap-8">
+               {/* Sidebar */}
+               <div className="lg:w-80">
+                  <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
+                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <User className="w-6 h-6 mr-2 text-green-600" />
+                        My Profile
+                     </h2>
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between w-full">
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-[#206645]" />
-                    {messages["locationEditTitle"] || "Edit Location"}
-                  </CardTitle>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setLocationEdit(!locationEdit)}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    {locationEdit ? messages["cancelTitle"] : messages["editTitle"] || "Edit"}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {locationEdit ? (
-                  <>
-                    <MapLocationPicker value={location} onChange={setLocation} />
-                    <Button
-                      className="mt-4"
-                      onClick={async () => {
-                        // Save location to Firestore
-                        const q = query(collection(db, "lists"), where("email", "==", user.email));
-                        const querySnapshot = await getDocs(q);
-                        const userDocSnap = querySnapshot.docs[0];
-                        const userDocRef = userDocSnap.ref;
-                        await updateDoc(userDocRef, { location });
-                        setUserData((prev) => ({ ...prev, location }));
-                        setLocationEdit(false);
-                        toast.success("Location updated!");
-                      }}
-                    >
-                      {messages["saveTitle"] || "Save Location"}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <MapPin className="w-5 h-5" />
-                      {location
-                        ? `Lng: ${location.lng.toFixed(6)}, Lat: ${location.lat.toFixed(6)}`
-                        : "No location set"}
-                    </div>
-                    <div style={{ pointerEvents: "none", opacity: 0.7 }}>
-                      <MapLocationPicker value={location} />
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Photo Gallery */}
-            <Card className="relative">
-              {/* Set Avatar Button */}
-
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Camera className="w-5 h-5 text-[#206645]" />
-                  {messages["photogalleryTitle"]}
-                </CardTitle>
-              </CardHeader>
-
-              <button
-                onClick={() => {
-                  updateAvatar(activePhotoIndex);
-                  setUserData((prev) => ({
-                    ...prev,
-                    avatar: activePhotoIndex,
-                  }));
-                }}
-                className="absolute top-4 right-4 z-10 bg-[#206645] text-white text-sm px-3 py-1 rounded-md shadow hover:bg-[#185536]"
-              >
-                {messages["setavatarTitle"]}
-              </button>
-
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Main Photo */}
-                  <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
-                    <Image
-                      src={
-                        userData.photos[activePhotoIndex] || "/placeholder.svg"
-                      }
-                      alt="Profile photo"
-                      width={600}
-                      height={400}
-                      className="w-full h-full object-cover"
-                    />
+                     <nav className="space-y-2">
+                        <button
+                           onClick={() => setActiveTab('account')}
+                           className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 ${activeTab === 'account'
+                                 ? 'bg-green-600 text-white shadow-md'
+                                 : 'text-[#6f3410] hover:bg-[#8B4513]/10'
+                              }`}
+                        >
+                           <User className="w-5 h-5 mr-3" />
+                           My Account
+                        </button>
+                        {user.role === "admin" ?
+                           <button
+                              onClick={() => router.push('/admin/allproperties')}
+                              className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 ${activeTab === 'properties'
+                                    ? 'bg-green-600 text-white shadow-md'
+                                    : 'text-[#6f3410] hover:bg-[#8B4513]/10'
+                                 }`}
+                           >
+                              <Home className="w-5 h-5 mr-3" />
+                              All Properties
+                           </button> :
+                           <button
+                              onClick={() => setActiveTab('properties')}
+                              className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 ${activeTab === 'properties'
+                                    ? 'bg-green-600 text-white shadow-md'
+                                    : 'text-[#6f3410] hover:bg-[#8B4513]/10'
+                                 }`}
+                           >
+                              <Home className="w-5 h-5 mr-3" />
+                              My Promotions
+                           </button>
+                        }
+                     </nav>
                   </div>
+               </div>
 
-                  {/* Thumbnail Gallery */}
-                  <div className="grid grid-cols-4 gap-2">
-                    {userData.photos.map((photo, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setActivePhotoIndex(index)}
-                        className={`aspect-square rounded-md overflow-hidden border-2 transition-colors ${
-                          activePhotoIndex === index
-                            ? "border-[#206645]"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <Image
-                          src={photo || "/placeholder.svg"}
-                          alt={`Photo ${index + 1}`}
-                          width={100}
-                          height={100}
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setOpenPhotosModal(true)}
-                      className={`aspect-square rounded-md overflow-hidden border-2 transition-colors`}
-                    >
-                      <u>{messages['uploadphotosTitle']}</u>
-                    </button>
-                    <EditPhotosModal
-                      open={openPhotosModal}
-                      onClose={() => setOpenPhotosModal(false)}
-                      initialValues={userData.photos}
-                      onSave={handleEditPhotosSave}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-
-            {/* Reviews */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between w-full">
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-[#206645]" />
-                    {messages["clientreviewsLabel"]}
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {userData.reviews.length === 0 ? (
-                  <div className="text-gray-500 italic text-center py-8">
-                    {messages["noreviewsLabel"] || "No reviews yet."}
-                  </div>
-                ) : (
-                  userData.reviews.map((review, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-sm">{review.name}</p>
-                          <p className="text-xs text-gray-500">{review.phone}</p>
+               {/* Main Content */}
+               <div className="flex-1">
+                  {activeTab === 'account' && (
+                     <div className="bg-white rounded-xl shadow-lg p-8">
+                        <div className="flex items-center justify-between mb-6">
+                           <h3 className="text-2xl font-bold text-gray-800">My Account</h3>
+                           {!isEditing && (
+                              <button
+                                 onClick={() => setIsEditing(true)}
+                                 className="flex items-center px-4 py-2 bg-[#8B4513] text-white rounded-lg hover:bg-[#6f3410] transition-colors"
+                              >
+                                 <Edit className="w-4 h-4 mr-2" />
+                                 Edit Profile
+                              </button>
+                           )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          {renderStars(5)} <b>5.0</b>
+
+                        {isEditing ? (
+                           <div className="space-y-6">
+                              {/* Profile Photo */}
+                              <div className="flex items-center space-x-6">
+                                 <div className="relative group">
+                                    <img
+                                       src={editForm.photoURL || userData?.img || "/user.jpg"}
+                                       alt="Profile"
+                                       className="w-24 h-24 rounded-full object-cover border-4 border-green-100"
+                                    />
+                                    <button
+                                       onClick={openPhotoEditor}
+                                       className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                    >
+                                       <Camera className="w-6 h-6 text-white" />
+                                    </button>
+                                 </div>
+                                 <div className="flex-1 space-y-3">
+                                    <div>
+                                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                                          Profile Photo
+                                       </label>
+                                       <div className="flex space-x-2">
+                                          <button
+                                             onClick={openPhotoEditor}
+                                             className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                          >
+                                             <Upload className="w-4 h-4 mr-2" />
+                                             Upload Photo
+                                          </button>
+                                          <button
+                                             onClick={() => fileInputRef.current?.click()}
+                                             className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                          >
+                                             <Camera className="w-4 h-4 mr-2" />
+                                             Choose File
+                                          </button>
+                                       </div>
+                                       <input
+                                          ref={fileInputRef}
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) => handleFileSelect(e.target.files[0])}
+                                          className="hidden"
+                                       />
+                                    </div>
+                                    <div>
+                                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                                          Or enter photo URL
+                                       </label>
+                                       <input
+                                          type="url"
+                                          value={editForm.photoURL}
+                                          onChange={(e) => setEditForm(prev => ({ ...prev, photoURL: e.target.value }))}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                                          placeholder="Enter photo URL"
+                                       />
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Name */}
+                              <div>
+                                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Full Name
+                                 </label>
+                                 <input
+                                    type="text"
+                                    value={editForm.username}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                                    placeholder="Enter your full name"
+                                 />
+                              </div>
+
+                              {/* Phone */}
+                              <div>
+                                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Phone Number
+                                 </label>
+                                 <input
+                                    type="tel"
+                                    value={editForm.phone}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                                    placeholder="Enter your phone number"
+                                 />
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex space-x-4 pt-4">
+                                 <button
+                                    onClick={handleSaveUserData}
+                                    disabled={isSaving}
+                                    className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                                 >
+                                    {isSaving ? (
+                                       <Loader className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                       <Save className="w-4 h-4 mr-2" />
+                                    )}
+                                    {isSaving ? 'Saving...' : 'Save Changes'}
+                                 </button>
+                                 <button
+                                    onClick={() => {
+                                       setIsEditing(false);
+                                       setEditForm({
+                                          username: userData?.username || '',
+                                          phone: userData?.phone || '',
+                                          photoURL: userData?.photoURL || ''
+                                       });
+                                    }}
+                                    className="flex items-center px-6 py-2 bg-[#8B4513] text-white rounded-lg hover:bg-[#6f3410] transition-colors"
+                                 >
+                                    <X className="w-4 h-4 mr-2" />
+                                    Cancel
+                                 </button>
+                              </div>
+                           </div>
+                        ) : (
+                           <div className="space-y-6">
+                              {/* Profile Photo */}
+                              <div className="flex items-center space-x-6">
+                                 <img
+                                    src={userData?.photoURL || userData?.img || "/user.jpg"}
+                                    alt="Profile"
+                                    className="w-24 h-24 rounded-full object-cover border-4 border-green-100"
+                                 />
+                                 <div>
+                                    <h4 className="text-xl font-semibold text-gray-800">{userData?.username || 'No Name'}</h4>
+                                    <p className="text-gray-600">{userData?.role || 'User'}</p>
+                                 </div>
+                              </div>
+
+                              {/* User Info */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                 <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
+                                    <p className="text-gray-800">{userData?.phone || 'No phone number'}</p>
+                                 </div>
+                                 <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">Member Since</label>
+                                    <p className="text-gray-800">
+                                       {userData?.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown'}
+                                    </p>
+                                 </div>
+                                 <div>
+                                    <label className="block text-sm font-medium text-gray-500 mb-1">Last Updated</label>
+                                    <p className="text-gray-800">
+                                       {userData?.updatedAt?.toDate?.()?.toLocaleDateString() || 'Never'}
+                                    </p>
+                                 </div>
+                              </div>
+                           </div>
+                        )}
+                     </div>
+                  )}
+
+                  {activeTab === 'properties' && (
+                     <div className="bg-white rounded-xl shadow-lg p-8">
+                        <div className="flex items-center justify-between mb-6">
+                           <h3 className="text-2xl font-bold text-gray-800">My Promotions</h3>
+                           <Link
+                              href="/map/all"
+                              className="flex items-center px-4 py-2 bg-[#8B4513] text-white rounded-lg hover:bg-[#6f3410] transition-colors"
+                           >
+                              <Home className="w-4 h-4 mr-2" />
+                              Add Promotion
+                           </Link>
                         </div>
-                      </div>
-                      <p className="text-sm text-gray-700 italic">
-                        &quot;{review.text}&quot;
-                      </p>
-                      {index < userData.reviews.length - 1 && <Separator />}
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+
+                        {userProperties.length === 0 ? (
+                           <div className="text-center py-12">
+                              <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                              <h4 className="text-xl font-semibold text-gray-600 mb-2">No Properties Yet</h4>
+                              <p className="text-gray-500 mb-6">You haven't added any properties yet.</p>
+                              <Link
+                                 href="/map/all"
+                                 className="inline-flex items-center px-6 py-3 bg-[#8B4513] text-white rounded-lg hover:bg-[#6f3410] transition-colors"
+                              >
+                                 <Home className="w-4 h-4 mr-2" />
+                                 Add Your First Property
+                              </Link>
+                           </div>
+                        ) : (
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {userProperties.map((property) => (
+                                 <div key={property.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div className="relative mb-4">
+                                       <img
+                                          src={property.photos?.[0] || "placeholder.svg"}
+                                          alt={property.title}
+                                          className="w-full h-48 object-cover rounded-lg"
+                                       />
+                                       <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-1 rounded text-sm font-bold">
+                                          ${property.price?.toLocaleString()}
+                                       </div>
+                                    </div>
+
+                                    <h4 className="font-semibold text-gray-800 mb-2 line-clamp-1">
+                                       {property.title}
+                                    </h4>
+                                    <p className="text-gray-600 text-sm mb-3">
+                                       {property.location}
+                                    </p>
+
+                                    <div className="flex items-center justify-between">
+                                       <div className="flex space-x-2">
+                                          <Link
+                                             href={`/singleproperty/${property.id}`}
+                                             className="flex items-center px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors"
+                                          >
+                                             <Eye className="w-3 h-3 mr-1" />
+                                             View
+                                          </Link>
+                                          <Link
+                                             href={`/addproperty/${property.id}`}
+                                             className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-sm hover:bg-yellow-200 transition-colors"
+                                          >
+                                             <Edit className="w-3 h-3 mr-1" />
+                                             Edit
+                                          </Link>
+                                       </div>
+                                       <button
+                                          onClick={() => handleDeleteProperty(property.id)}
+                                          className="flex items-center px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors"
+                                       >
+                                          <Trash2 className="w-3 h-3 mr-1" />
+                                          Delete
+                                       </button>
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        )}
+                     </div>
+                  )}
+               </div>
+            </div>
+         </div>
+
+         {/* Photo Editor Modal */}
+         {photoEditor.isOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+               <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                     <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-bold text-gray-800">Update Profile Photo</h3>
+                        <button
+                           onClick={closePhotoEditor}
+                           className="text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                           <X className="w-6 h-6" />
+                        </button>
+                     </div>
+
+                     {/* Drag & Drop Zone */}
+                     <div
+                        ref={dropZoneRef}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${photoEditor.dragActive
+                              ? 'border-green-600 bg-green-50'
+                              : 'border-gray-300 hover:border-gray-400'
+                           }`}
+                     >
+                        {photoEditor.preview ? (
+                           <div className="space-y-4">
+                              <img
+                                 src={photoEditor.preview}
+                                 alt="Preview"
+                                 className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-green-100"
+                              />
+                              <p className="text-sm text-gray-600">
+                                 {photoEditor.selectedFile?.name}
+                              </p>
+                              <button
+                                 onClick={() => setPhotoEditor(prev => ({ ...prev, selectedFile: null, preview: null }))}
+                                 className="flex items-center justify-center mx-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                 <RotateCcw className="w-4 h-4 mr-2" />
+                                 Choose Different Photo
+                              </button>
+                           </div>
+                        ) : (
+                           <div className="space-y-4">
+                              <Upload className="w-12 h-12 text-gray-400 mx-auto" />
+                              <div>
+                                 <p className="text-lg font-medium text-gray-700 mb-2">
+                                    Drop your photo here
+                                 </p>
+                                 <p className="text-sm text-gray-500 mb-4">
+                                    or click to browse files
+                                 </p>
+                                 <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                 >
+                                    <Camera className="w-4 h-4 mr-2" />
+                                    Choose File
+                                 </button>
+                              </div>
+                           </div>
+                        )}
+                     </div>
+
+                     {/* File Input */}
+                     <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileSelect(e.target.files[0])}
+                        className="hidden"
+                     />
+
+                     {/* Action Buttons */}
+                     <div className="flex space-x-3 mt-6">
+                        <button
+                           onClick={closePhotoEditor}
+                           className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                           Cancel
+                        </button>
+                        <button
+                           onClick={uploadPhoto}
+                           disabled={!photoEditor.selectedFile || photoEditor.isUploading}
+                           className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        >
+                           {photoEditor.isUploading ? (
+                              <>
+                                 <Loader className="w-4 h-4 mr-2 animate-spin" />
+                                 Uploading...
+                              </>
+                           ) : (
+                              <>
+                                 <Save className="w-4 h-4 mr-2" />
+                                 Upload Photo
+                              </>
+                           )}
+                        </button>
+                     </div>
+
+                     {/* Tips */}
+                     <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                        <h4 className="text-sm font-medium text-green-800 mb-2">Tips for best results:</h4>
+                        <ul className="text-xs text-green-700 space-y-1">
+                           <li>• Use a square image for best results</li>
+                           <li>• Recommended size: 400x400 pixels or larger</li>
+                           <li>• Supported formats: JPG, PNG, GIF</li>
+                           <li>• Maximum file size: 5MB</li>
+                        </ul>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
       </div>
-    </div>
-  );
-}
+   );
+};
+
+export default UserProfile;
