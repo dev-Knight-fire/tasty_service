@@ -326,7 +326,7 @@ const Influencers = () => {
       }
     };
     initializeData();
-  }, []);
+  });
 
   // Sorting
   const sortedContent = [...influencerContent].sort((a, b) => {

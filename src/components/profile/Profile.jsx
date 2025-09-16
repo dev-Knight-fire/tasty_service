@@ -577,7 +577,7 @@ const UserProfile = () => {
                            <div className="text-center py-12">
                               <Home className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                               <h4 className="text-xl font-semibold text-gray-600 mb-2">No Properties Yet</h4>
-                              <p className="text-gray-500 mb-6">You haven't added any properties yet.</p>
+                              <p className="text-gray-500 mb-6">You have not added any properties yet.</p>
                               <Link
                                  href="/map/all"
                                  className="inline-flex items-center px-6 py-3 bg-[#8B4513] text-white rounded-lg hover:bg-[#6f3410] transition-colors"
