@@ -45,50 +45,50 @@ const AboutUsDetail = () => {
     {
       id: "restaurants",
       icon: <Utensils className="text-[#206645] dark:text-green-400 h-5 w-5" />,
-      title: "Restaurants",
-      description: "Discover amazing dining experiences and authentic cuisines from around the world.",
+      title: messages['restaurantsTitle'],
+      description: messages['restaurantsContent'],
     },
     {
       id: "cafes",
       icon: <Coffee className="text-[#206645] dark:text-green-400 h-5 w-5" />,
-      title: "Cafes & Coffee Shops",
-      description: "Find the perfect spot for your morning coffee or afternoon tea break.",
+      title: messages['cafescoffeeshopsTitle'],
+      description: messages['cafescoffeeshopsContent'],
     },
     {
       id: "fastfood",
       icon: <Pizza className="text-[#206645] dark:text-green-400 h-5 w-5" />,
-      title: "Fast Food & Quick Bites",
-      description: "Quick and delicious meals for when you are on the go.",
+      title: messages['fastfoodTitle'],
+      description: messages['fastfoodContent'],
     },
     {
       id: "desserts",
       icon: <Cake className="text-[#206645] dark:text-green-400 h-5 w-5" />,
-      title: "Desserts & Sweet Treats",
-      description: "Indulge in the finest desserts and sweet delicacies.",
+      title: messages['dessertsTitle'],
+      description: messages['dessertsContent'],
     },
     {
       id: "streetfood",
       icon: <ChefHat className="text-[#206645] dark:text-green-400 h-5 w-5" />,
-      title: "Street Food",
-      description: "Experience authentic local flavors from street vendors and food trucks.",
+      title: messages['streetfoodTitle'],
+      description: messages['streetfoodContent'],
     },
     {
       id: "fine-dining",
       icon: <Award className="text-[#206645] dark:text-green-400 h-5 w-5" />,
-      title: "Fine Dining",
-      description: "Upscale restaurants offering exceptional culinary experiences.",
+      title: messages['finediningTitle'],
+      description: messages['finediningContent'],
     },
     {
       id: "food-markets",
       icon: <MapPin className="text-[#206645] dark:text-green-400 h-5 w-5" />,
-      title: "Food Markets",
-      description: "Fresh ingredients and local produce from vibrant food markets.",
+      title: messages['foodmarketsTitle'],
+      description: messages['foodmarketsContent'],
     },
     {
       id: "food-blogs",
       icon: <TrendingUp className="text-[#206645] dark:text-green-400 h-5 w-5" />,
-      title: "Food Bloggers",
-      description: "Follow your favorite food influencers and discover new culinary trends.",
+      title: messages['foodbloggersTitle'],
+      description: messages['foodbloggersContent2'],
     },
   ];
 
@@ -106,12 +106,10 @@ const AboutUsDetail = () => {
           >
             <motion.div variants={fadeIn} className="order-2 lg:order-1">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-                Our Mission
+                {messages['ourmissionTitle']}
               </h2>
               <p className="text-gray-700 dark:text-gray-300 text-lg mb-6 leading-relaxed">
-                TastyService is your ultimate culinary companion, bringing together authentic restaurant reviews, 
-                real-time promotions, and inspiring food content. We connect food lovers with amazing dining 
-                experiences while helping restaurants showcase their best offerings.
+                {messages['ourmissionContent']}
               </p>
               <div className="space-y-4 mb-8">
                 <div className="flex items-start">
@@ -121,7 +119,7 @@ const AboutUsDetail = () => {
                     </svg>
                   </div>
                   <p className="ml-3 text-gray-700 dark:text-gray-300">
-                    <span className="font-medium text-gray-900 dark:text-white">Verified Reviews</span> — Real experiences from genuine customers who have dined at these establishments.
+                    <span className="font-medium text-gray-900 dark:text-white">{messages['verifiedreviewsTitle']}</span> — {messages['verifiedreviewsContent']}
                   </p>
                 </div>
                 <div className="flex items-start">
@@ -131,7 +129,7 @@ const AboutUsDetail = () => {
                     </svg>
                   </div>
                   <p className="ml-3 text-gray-700 dark:text-gray-300">
-                    <span className="font-medium text-gray-900 dark:text-white">Live Promotions</span> — Discover current deals, special offers, and limited-time menu items.
+                    <span className="font-medium text-gray-900 dark:text-white">{messages['livepromotionsTitle']}</span> — {messages['livepromotionsContent']}
                   </p>
                 </div>
                 <div className="flex items-start">
@@ -141,7 +139,7 @@ const AboutUsDetail = () => {
                     </svg>
                   </div>
                   <p className="ml-3 text-gray-700 dark:text-gray-300">
-                    <span className="font-medium text-gray-900 dark:text-white">Food Inspiration</span> — Get inspired by food bloggers and discover new culinary trends and hidden gems.
+                    <span className="font-medium text-gray-900 dark:text-white">{messages['foodinspirationTitle']}</span> — {messages['foodinspirationContent']}
                   </p>
                 </div>
               </div>
@@ -149,7 +147,7 @@ const AboutUsDetail = () => {
                 href="/map/all"
                 className="inline-flex items-center px-6 py-3 bg-[#206645] hover:bg-[#a66c44] text-white font-medium rounded-lg transition-colors duration-300"
               >
-                Explore Restaurants
+                {messages['exploremapTitle']}
                 <svg
                   className="w-5 h-5 ml-2"
                   fill="none"
@@ -187,10 +185,10 @@ const AboutUsDetail = () => {
             className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Who We Serve
+              {messages['whoweserveTitle']}
             </h2>
             <p className="text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto">
-              TastyService connects everyone in the culinary ecosystem - from food enthusiasts to restaurant owners and food creators.
+              {messages['whoweservesubTitle']}
             </p>
           </motion.div>
 
@@ -209,10 +207,10 @@ const AboutUsDetail = () => {
                 <Heart className="w-8 h-8 text-[#206645] dark:text-green-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Food Enthusiasts
+                {messages['foodenthusiastsTitle']}
               </h3>
               <p className="text-gray-700 dark:text-gray-300 mb-6">
-                Discover new restaurants, read authentic reviews, and find the best deals on your next dining adventure.
+                {messages['foodenthusiastsContent']}
               </p>
             </motion.div>
             <motion.div
@@ -223,10 +221,10 @@ const AboutUsDetail = () => {
                 <Utensils className="w-8 h-8 text-[#206645] dark:text-green-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Restaurant Owners
+                {messages['restaurantownersTitle']}
               </h3>
               <p className="text-gray-700 dark:text-gray-300 mb-6">
-                Showcase your restaurant, promote special offers, and connect with food lovers in your community.
+                {messages['restaurantownersContent']}
               </p>
             </motion.div>
             <motion.div
@@ -237,10 +235,10 @@ const AboutUsDetail = () => {
                 <TrendingUp className="w-8 h-8 text-[#206645] dark:text-green-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Food Bloggers
+                {messages['foodbloggersTitle']}
               </h3>
               <p className="text-gray-700 dark:text-gray-300 mb-6">
-                Share your culinary discoveries, build your audience, and inspire others with your food content.
+                {messages['foodbloggersContent']}
               </p>
             </motion.div>
           </motion.div>
@@ -258,10 +256,10 @@ const AboutUsDetail = () => {
             className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Food Categories
+              {messages['foodcategoriesTitle']}
             </h2>
             <p className="text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto">
-              Explore diverse culinary experiences across different types of dining establishments and food experiences.
+              {messages['foodcategoriesContent']}
             </p>
           </motion.div>
           <motion.div
@@ -305,10 +303,10 @@ const AboutUsDetail = () => {
             className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Our Values
+              {messages['ourvaluesTitle']}
             </h2>
             <p className="text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto">
-              We are committed to creating a trustworthy platform that celebrates authentic culinary experiences.
+              {messages['ourvaluessubTitle']}
             </p>
           </motion.div>
           <motion.div
@@ -324,10 +322,10 @@ const AboutUsDetail = () => {
                 <Star className="w-10 h-10 text-[#206645] dark:text-green-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Authenticity
+                {messages['authenticityTitle']}
               </h3>
               <p className="text-gray-700 dark:text-gray-300">
-                We believe in genuine reviews and authentic experiences. Every review and promotion is verified to ensure quality and trustworthiness.
+                {messages['authenticityContent']}
               </p>
             </motion.div>
             {/* Community */}
@@ -336,10 +334,10 @@ const AboutUsDetail = () => {
                 <Users className="w-10 h-10 text-[#206645] dark:text-green-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Community
+                {messages['communityTitle']}
               </h3>
               <p className="text-gray-700 dark:text-gray-300">
-                We foster a vibrant community of food lovers, restaurant owners, and content creators who share their passion for great food.
+                {messages['communityContent']}
               </p>
             </motion.div>
             {/* Innovation */}
@@ -348,10 +346,10 @@ const AboutUsDetail = () => {
                 <Clock className="w-10 h-10 text-[#206645] dark:text-green-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Real-Time Experience
+                {messages['realtimeTitle']}
               </h3>
               <p className="text-gray-700 dark:text-gray-300">
-                Stay updated with live promotions, current restaurant status, and real-time reviews to make informed dining decisions.
+                {messages['realtimeContent']}
               </p>
             </motion.div>
           </motion.div>
