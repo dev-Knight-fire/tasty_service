@@ -8,6 +8,7 @@ import {
   limit,
   doc as docRef,
   getDoc,
+  where,
 } from "firebase/firestore";
 import { db } from "../../firebase/firestore";
 import { FaStar, FaPlus, FaUser, FaCamera, FaUtensils } from "react-icons/fa";
@@ -50,6 +51,7 @@ const LatestReviews = () => {
 
         const reviewsQ = query(
           collection(db, "reviews"),
+          where("status", "==", "approved"),
           orderBy("createdAt", "desc"),
           limit(6)
         );

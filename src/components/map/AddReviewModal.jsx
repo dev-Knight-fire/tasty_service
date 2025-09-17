@@ -1,29 +1,29 @@
 "use client";
-import { serverTimestamp, addDoc, collection } from "firebase/firestore";
+import { serverTimestamp, addDoc, collection, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage, db } from "../../firebase/firestore";
 import React, { useState } from "react";
 import { FaTimes, FaStar, FaCamera, FaMapMarkerAlt } from "react-icons/fa";
 import { useAuth } from "@/contexts/AuthContext"; // Assuming you have an auth context
 
-const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => {
+const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant, mode = "add", initialReview = null, initialPlace = null }) => {
   const { user } = useAuth(); // Get current user
   
   // Determine if this is for an existing restaurant or a new place
-  const isExistingRestaurant = !!restaurant?.id;
+  const isExistingRestaurant = !!(restaurant?.id || initialPlace?.id);
   
   const [formData, setFormData] = useState({
-    venueName: restaurant?.venueName || "", // Pre-fill with restaurant name if available
-    visitDate: new Date().toISOString().split('T')[0], // Default to today
-    ratings: {
+    venueName: initialPlace?.venueName || restaurant?.venueName || "", // Pre-fill with place name if available
+    visitDate: initialReview?.visitDate ? (initialReview.visitDate.toDate ? initialReview.visitDate.toDate().toISOString().split('T')[0] : new Date(initialReview.visitDate).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+    ratings: initialReview?.ratings || {
       food: 0,
       cleanliness: 0,
       service: 0,
       valueForMoney: 0,
       wouldReturn: 0
     },
-    comment: "",
-    photos: []
+    comment: initialReview?.comment || "",
+    photos: initialReview?.photos || []
   });
 
   const [errors, setErrors] = useState({});
@@ -31,13 +31,13 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
 
   // Update form data when restaurant changes
   React.useEffect(() => {
-    if (restaurant?.venueName) {
+    if (restaurant?.venueName && !initialPlace?.venueName) {
       setFormData(prev => ({
         ...prev,
         venueName: restaurant.venueName
       }));
     }
-  }, [restaurant?.venueName]);
+  }, [restaurant?.venueName, initialPlace?.venueName]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -72,7 +72,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.venueName.trim()) {
+    if (!formData.venueName.trim() && !isExistingRestaurant) {
       newErrors.venueName = "Venue name is required";
     }
     
@@ -80,7 +80,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
       newErrors.visitDate = "Visit date is required";
     }
     
-    const hasRating = Object.values(formData.ratings).some(rating => rating > 0);
+    const hasRating = Object.values(formData.ratings).some(rating => Number(rating) > 0);
     if (!hasRating) {
       newErrors.ratings = "At least one rating is required";
     }
@@ -146,6 +146,54 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
     setIsSubmitting(true);
 
     try {
+      if (mode === "edit" && initialReview) {
+        // Editing existing review
+        let photoUrls = Array.isArray(formData.photos) && typeof formData.photos[0] === 'string' ? formData.photos : [];
+        // If user selected new File objects, upload and replace
+        if (Array.isArray(formData.photos) && formData.photos.length > 0 && formData.photos[0] instanceof File) {
+          photoUrls = await uploadPhotos(formData.photos);
+        }
+
+        // Update place name if provided and we have an existing place
+        const placeId = initialReview.placeId || restaurant?.id || initialPlace?.id;
+        if (placeId && formData.venueName?.trim()) {
+          try {
+            await updateDoc(doc(db, "places", placeId), { venueName: formData.venueName.trim() });
+          } catch (err) {
+            console.error("Failed to update place name:", err);
+          }
+        }
+
+        const reviewUpdate = {
+          ratings: formData.ratings,
+          comment: formData.comment.trim(),
+          photos: photoUrls,
+          visitDate: new Date(formData.visitDate),
+          updatedAt: serverTimestamp(),
+        };
+
+        await updateDoc(doc(db, "reviews", initialReview.id), reviewUpdate);
+
+        onSubmit({
+          place: {
+            id: placeId,
+            ...(initialPlace || restaurant || {}),
+            venueName: formData.venueName?.trim() || (initialPlace?.venueName || restaurant?.venueName) || "",
+          },
+          review: {
+            id: initialReview.id,
+            ...initialReview,
+            ...reviewUpdate,
+            placeId: placeId,
+            userId: initialReview.userId || user?.username || user?.email || "anonymous",
+          }
+        });
+
+        setIsSubmitting(false);
+        onClose();
+        return;
+      }
+
       // 1. Upload photos to Firebase Storage
       let photoUrls = [];
       if (formData.photos.length > 0) {
@@ -156,7 +204,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
       let placeId;
       if (isExistingRestaurant) {
         // If we have a restaurant ID, use it (existing place)
-        placeId = restaurant.id;
+        placeId = restaurant?.id || initialPlace?.id;
       } else {
         // If no restaurant ID, create a new place
         const placeData = {
@@ -171,7 +219,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
 
       // 3. Save review to reviews collection
       const reviewData = {
-        userId: user.username,
+        userId: user.username || user.email,
         placeId: placeId,
         ratings: formData.ratings,
         comment: formData.comment.trim(),
@@ -186,7 +234,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
       onSubmit({
         placeId,
         reviewId,
-        place: isExistingRestaurant ? restaurant : { id: placeId, ...formData },
+        place: isExistingRestaurant ? (restaurant || initialPlace) : { id: placeId, ...formData },
         review: reviewData
       });
 
@@ -239,7 +287,7 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-800">
-            {isExistingRestaurant ? "Add Review" : "Add Place & Review"}
+            {mode === 'edit' ? "Edit Review" : (isExistingRestaurant ? "Add Review" : "Add Place & Review")}
           </h2>
           <button
             onClick={onClose}
@@ -252,11 +300,11 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Restaurant Name Display (for existing restaurants) */}
-          {isExistingRestaurant && restaurant?.venueName && (
+          {isExistingRestaurant && (restaurant?.venueName || initialPlace?.venueName) && (
             <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
               <FaMapMarkerAlt className="text-blue-500" />
               <span className="text-sm font-medium text-blue-800">
-                {restaurant.venueName}
+                {restaurant?.venueName || initialPlace?.venueName}
               </span>
             </div>
           )}
@@ -385,8 +433,25 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
               </label>
               {formData.photos.length > 0 && (
                 <span className="text-sm text-gray-500">
-                  {formData.photos.length} photo(s) selected
+                  {Array.isArray(formData.photos) && formData.photos[0] instanceof File ? `${formData.photos.length} photo(s) selected` : `${formData.photos.length} photo(s)`}
                 </span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Visit Date *</label>
+              <input
+                type="date"
+                name="visitDate"
+                value={formData.visitDate}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.visitDate ? 'border-red-500' : 'border-gray-300'}`}
+                disabled={isSubmitting}
+              />
+              {errors.visitDate && (
+                <p className="text-red-500 text-sm mt-1">{errors.visitDate}</p>
               )}
             </div>
           </div>
@@ -413,10 +478,10 @@ const AddReviewModal = ({ isOpen, onClose, location, onSubmit, restaurant }) => 
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
                   </svg>
-                  <span>Submitting...</span>
+                  <span>{mode === 'edit' ? 'Saving...' : 'Submitting...'}</span>
                 </>
               ) : (
-                <span>Submit Review</span>
+                <span>{mode === 'edit' ? 'Save Changes' : 'Submit Review'}</span>
               )}
             </button>
           </div>

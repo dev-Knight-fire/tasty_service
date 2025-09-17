@@ -36,7 +36,8 @@ const RestaurantDetailsModal = ({ restaurant, onClose, onAddReview, onAddPromoti
         const reviewsRef = collection(db, "reviews");
         const q = query(
           reviewsRef, 
-          where("placeId", "==", restaurant.id)
+          where("placeId", "==", restaurant.id),
+          where("status", "==", "approved")
         );
         
         const querySnapshot = await getDocs(q);
