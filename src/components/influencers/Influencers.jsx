@@ -47,57 +47,38 @@ const Influencers = () => {
   // ---- Realistic influencer profiles (fictional people, real avatar images) ----
   const influencerProfiles = [
     {
-      id: "foodie_adventures",
-      name: "Foodie Adventures",
-      platform: "youtube",
-      handle: "@foodie_adventures",
-      avatar:
-        "https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=160&h=160&fit=crop&crop=faces",
-      followers: "2.3M",
-      location: { lat: 40.7128, lng: -74.006, city: "New York" },
-      verified: true,
-    },
-    {
       id: "taste_traveler",
-      name: "Taste Traveler",
-      platform: "instagram",
+      name: "Wrocławskie Podróże Kulinarne",
+      platform: "facebook",
+      email: "wroclawskiejedzenie@wp.pl",
       handle: "@taste_traveler",
       avatar:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=160&h=160&fit=crop&crop=faces",
-      followers: "1.8M",
+        "https://scontent-mad1-1.xx.fbcdn.net/v/t39.30808-1/347782622_2940399602763018_9217239028911356709_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=101&ccb=1-7&_nc_sid=2d3e12&_nc_ohc=nYWKSwN2_UcQ7kNvwGdGoqI&_nc_oc=AdkZlk8kdxLtJ0p5ZkoTJ2VwSL21of9iKHFFevM503BB826_o5cHa6IFJJtsb6A2sv4&_nc_zt=24&_nc_ht=scontent-mad1-1.xx&_nc_gid=zhifa2skGrX3bVtFNlVDNg&oh=00_Afb0cysSAqLYdNXBjkOpy1qgs_EATyQ79FJeAu400IrnGQ&oe=68D02C83",
+      followers: "864",
       location: { lat: 34.0522, lng: -118.2437, city: "Los Angeles" },
       verified: true,
     },
     {
-      id: "street_food_king",
-      name: "Street Food King",
-      platform: "tiktok",
-      handle: "@street_food_king",
-      avatar:
-        "https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?q=80&w=160&h=160&fit=crop&crop=faces",
-      followers: "3.1M",
-      location: { lat: 25.7617, lng: -80.1918, city: "Miami" },
-      verified: false,
-    },
-    {
       id: "chef_maria",
-      name: "Chef Maria",
-      platform: "blog",
+      name: "Karol Okrasa",
+      platform: "facebook",
+      email: "media@karolokrasa.pl",
       handle: "chefmaria.com",
       avatar:
-        "https://images.unsplash.com/photo-1544717305-996b815c338c?q=80&w=160&h=160&fit=crop&crop=faces",
-      followers: "850K",
+        "https://scontent-ord5-1.xx.fbcdn.net/v/t39.30808-1/464323931_27259538276994727_6512463039352728143_n.jpg?stp=c0.0.467.467a_dst-jpg_s200x200_tt6&_nc_cat=101&ccb=1-7&_nc_sid=2d3e12&_nc_ohc=XWgdQwm3Mo4Q7kNvwGIzVVF&_nc_oc=AdkNapYgs4CmBLTjxttzcFtVuNZR3hb2CmIhgXlb9djYtRhzQDDXnISkxCwpfGpYcsk&_nc_zt=24&_nc_ht=scontent-ord5-1.xx&_nc_gid=HbG-86kYMM32DaDnVa1gsw&oh=00_AfauAaUSENco15Tyd0-1IPItvZ_a2IsOqtoP2JW36aVUMg&oe=68D0503D",
+      followers: "170",
       location: { lat: 41.8781, lng: -87.6298, city: "Chicago" },
       verified: true,
     },
     {
       id: "dessert_dreams",
-      name: "Dessert Dreams",
-      platform: "instagram",
+      name: "Michel Moran",
+      platform: "facebook",
+      email: "doradcasmaku@doradcasmaku.pl",
       handle: "@dessert_dreams",
       avatar:
-        "https://images.unsplash.com/photo-1529665253569-6d01c0eaf7b6?q=80&w=160&h=160&fit=crop&crop=faces",
-      followers: "1.2M",
+        "https://scontent.xx.fbcdn.net/v/t39.30808-1/340842473_735910868232539_3971283541904922713_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=108&ccb=1-7&_nc_sid=2d3e12&_nc_ohc=20e-2FrUyYkQ7kNvwFXa5l9&_nc_oc=AdlM7H_RkWC-HEmJxw90BcpFywxDHY7A6eUFJlbFjmwo9ddanVZVhAvidzBkqvv_r2w&_nc_zt=24&_nc_ht=scontent.xx&_nc_gid=m98UPoUlRv3U_3ooLaeaQw&oh=00_AfaBojNW5WGQ7eSCyyhYo9WXSGe5jsbsSifL1bP-dP5J6A&oe=68D05A97",
+      followers: "7",
       location: { lat: 37.7749, lng: -122.4194, city: "San Francisco" },
       verified: true,
     },
@@ -105,104 +86,62 @@ const Influencers = () => {
 
   // ---- Real content links (thumbnails + some direct mp4s) ----
   const mockContent = [
-    // {
-    //   id: "1",
-    //   influencerId: "foodie_adventures",
-    //   title: "Best Pizza in NYC - Hidden Gems Revealed!",
-    //   description:
-    //     "After trying 50+ pizza places in NYC, here are the absolute best hidden gems that locals don't want you to know about...",
-    //   thumbnail:
-    //     "https://images.unsplash.com/photo-1548365328-9f547fb0953c?q=80&w=1200&auto=format&fit=crop",
-    //   type: "video",
-    //   platform: "youtube",
-    //   url: "https://www.youtube.com/results?search_query=best+pizza+in+nyc",
-    //   // cc0 sample video for in-app preview
-    //   videoUrl:
-    //     "https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4",
-    //   publishedAt: new Date("2024-01-15T10:30:00Z"),
-    //   location: {
-    //     lat: 40.73061,
-    //     lng: -73.935242,
-    //     city: "New York",
-    //     venue: "Joe's Pizza",
-    //   },
-    //   engagement: { views: "2.1M", likes: "45K", comments: "1.2K" },
-    // },
     {
       id: "2",
       influencerId: "taste_traveler",
-      title: "LA Most Instagrammable Brunch Spots",
+      title: "Wrocławskie Podróże Kulinarne",
       description:
-        "These brunch spots in LA are not only delicious but also perfect for your Instagram feed. Here is my complete guide...",
+        "Największy wrocławski blog restauracyjno-podróżniczy. Od 2014 roku opisuję dla Was miejsca, w których warto jeść, a które lepiej omijać szerokim łukiem. Każda recenzja to szczera opinia oraz praktyczny przewodnik po kulinarnej mapie Wrocławia i najlepszych smakach, które oferuje to miasto.",
       thumbnail:
         "https://images.unsplash.com/photo-1516685018646-549198525c1b?q=80&w=1200&auto=format&fit=crop",
       type: "post",
-      platform: "instagram",
-      url: "https://www.instagram.com/explore/tags/labrunch/",
-      publishedAt: new Date("2024-01-14T15:45:00Z"),
+      platform: "facebook",
+      url: "https://www.facebook.com/share/16CwjNxWvH/?mibextid=wwXIfr",
+      publishedAt: new Date("2025-09-17T15:45:00Z"),
       location: {
-        lat: 34.0736,
-        lng: -118.4004,
-        city: "Los Angeles",
-        venue: "The Butcher Daughter",
+        lat: 51.108973,
+        lng: 17.032672,
+        city: "Wroclaw",
+        venue: "",
       },
+      website: "wroclawskiejedzenie.pl",
       engagement: { views: "890K", likes: "32K", comments: "850" },
     },
-    // {
-    //   id: "3",
-    //   influencerId: "street_food_king",
-    //   title: "Miami Street Food Tour - $20 Challenge",
-    //   description:
-    //     "Can I eat amazing street food in Miami for just $20? Let's find out in this epic food tour!",
-    //   thumbnail:
-    //     "https://images.unsplash.com/photo-1541542684-4bf3abe3b0d7?q=80&w=1200&auto=format&fit=crop",
-    //   type: "video",
-    //   platform: "tiktok",
-    //   url: "https://www.tiktok.com/tag/miamistreetfood",
-    //   videoUrl:
-    //     "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    //   publishedAt: new Date("2024-01-13T20:15:00Z"),
-    //   location: {
-    //     lat: 25.7907,
-    //     lng: -80.13,
-    //     city: "Miami",
-    //     venue: "Wynwood Food Trucks",
-    //   },
-    //   engagement: { views: "4.2M", likes: "180K", comments: "8.5K" },
-    // },
     {
       id: "4",
       influencerId: "chef_maria",
-      title: "Chicago Deep Dish Pizza Recipe - Restaurant Secrets",
+      title: "Udany posiłekto także przygoda",
       description:
-        "I spent 3 months learning from Chicago best pizza chefs. Here is the authentic deep dish recipe with all the secrets...",
+        "Najzdolniejszy kucharz swojego pokolenia, odkrywca polskiej kuchni regionalnej. Jego Smaki czasu – kontynuacja kultowej Kuchni z Okrasą – już wkrótce znowu na antenie TVP2, zabierze widzów w pasjonującą kulinarną podróż pełną historii, tradycji oraz niezwykłych smaków polskich regionów.",
       thumbnail:
-        "https://images.unsplash.com/photo-1541823709867-1b206113eafd?q=80&w=1200&auto=format&fit=crop",
+        "https://karolokrasa.pl/wp-content/uploads/section2.png",
       type: "article",
-      platform: "blog",
-      url: "https://www.seriouseats.com/chicago-style-deep-dish-pizza-recipe-6751291",
-      publishedAt: new Date("2024-01-12T09:20:00Z"),
-      location: { lat: 41.8781, lng: -87.6298, city: "Chicago", venue: "Lou Malnati" },
+      platform: "facebook",
+      url: "https://www.facebook.com/share/1EgQtAhjp1/?mibextid=wwXIfr",
+      publishedAt: new Date("2025-09-17T09:20:00Z"),
+      location: { lat: 52.232422, lng: 21.002222, city: "Warszawa", venue: "Hotel InterContinental, Emilii Platter 49, 00-125" },
+      website: "karolokrasa.pl",
       engagement: { views: "125K", likes: "8.2K", comments: "340" },
     },
     {
       id: "5",
       influencerId: "dessert_dreams",
-      title: "SF Most Decadent Desserts - Sweet Tooth Paradise",
+      title: "SPRAWDZONE PORADY KULINARNE",
       description:
-        "San Francisco has some of the most incredible dessert spots. Here are my top picks for when you need something sweet...",
+        "DoradcaSmaku.pl to serwis dla miłośników gotowania, oferujący najlepsze, sprawdzone przepisy na wszystkie posiłki — od śniadań, przez obiady i kolacje, po desery, przekąski, ciasta i pieczywo. Znajdziesz tu także kulinarne porady, wideo przepisy oraz inspiracje na każdą okazję. Gotuj z nami i rozwijaj swoją pasję w przyjaznej społeczności pełnej smaków i nieskończonych pomysłów.",
       thumbnail:
-        "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=1200&auto=format&fit=crop",
+        "https://ads.doradcasmaku.pl/www/images/2202284fd91cec57f65bdd85514e5643.jpg",
       type: "post",
-      platform: "instagram",
-      url: "https://www.instagram.com/explore/tags/sanfranciscodesserts/",
-      publishedAt: new Date("2024-01-11T14:30:00Z"),
+      platform: "facebook",
+      url: "https://www.facebook.com/share/1CSqPck6Gg/?mibextid=wwXIfr",
+      publishedAt: new Date("2025-09-17T14:30:00Z"),
       location: {
-        lat: 37.7849,
-        lng: -122.4094,
-        city: "San Francisco",
-        venue: "Tartine Bakery",
+        lat: 49.935154,
+        lng: 18.581375,
+        city: "Chlebowa 14, 44-337 Jastrzębie-Zdrój",
+        venue: "Prymat sp. z o.o. ul.",
       },
+      website: "doradcasmaku.pl",
       engagement: { views: "650K", likes: "28K", comments: "1.1K" },
     },
   ];
@@ -598,7 +537,7 @@ const Influencers = () => {
                           {content.influencer.name}
                         </div>
                         <div className="text-gray-500 dark:text-gray-300 text-xs">
-                          {content.influencer.handle} • {content.influencer.followers} followers
+                          {content.influencer.email} • {content.influencer.followers} followers
                         </div>
                       </div>
                     </div>
