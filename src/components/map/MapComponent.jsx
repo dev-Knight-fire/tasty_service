@@ -12,10 +12,14 @@ import RestaurantDetailsModal from './RestaurantDetailsModal';
 import { FaPlus, FaMapMarkerAlt, FaLocationArrow, FaUtensils } from 'react-icons/fa';
 import { useLang } from '@/contexts/LangContext';
 import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Category definitions for filtering and UI
 
 export default function MapComponent({ category }) {
+  const router = useRouter();
+  const { user } = useAuth();
   const { messages } = useLang();
   const searchParams = useSearchParams();
   const locationValue = searchParams.get('locationValue');
@@ -289,6 +293,9 @@ export default function MapComponent({ category }) {
 
   // Toggle add review mode
   const toggleAddReviewMode = () => {
+    if(!user.email) {
+      router.push("/signin")
+    }
     setIsAddingReview(!isAddingReview);
     if (isAddingReview) {
       // If turning off, remove review marker
@@ -369,6 +376,9 @@ export default function MapComponent({ category }) {
 
   // Handle add review from restaurant modal
   const handleAddReviewFromRestaurant = (place) => {
+    if(!user.email) {
+      router.push("/signin");
+    }
     setShowRestaurantModal(false);
     setSelectedLocation({ lng: place.lng, lat: place.lat });
     setSelectedRestaurant(place); // Set the selected restaurant
@@ -377,6 +387,9 @@ export default function MapComponent({ category }) {
 
   // Handle add promotion from restaurant modal
   const handleAddPromotionFromRestaurant = (place) => {
+    if(!user.email) {
+      router.push("/signin");
+    }
     setShowRestaurantModal(false);
     setSelectedLocation({ lng: place.lng, lat: place.lat });
     setSelectedRestaurant(place); // Set the selected restaurant

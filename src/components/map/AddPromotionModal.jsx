@@ -102,7 +102,7 @@ const AddPromotionModal = ({ isOpen, onClose, location, restaurant, onSubmit, mo
           endDateTime: new Date(endDateTime),
           photos: photos,
           phoneNumber: phoneNumber.trim(),
-          status: initialPromotion.status || "active",
+          status: initialPromotion.status || "inactive",
         };
         await updateDoc(doc(db, "promotions", promotionId), updatedPromotion);
 

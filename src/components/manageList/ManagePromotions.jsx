@@ -1,11 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { collection, getDocs, getDoc, doc, updateDoc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
 import { db } from "@/firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import AddPromotionModal from "@/components/map/AddPromotionModal";
+import PromotionDetailModal from "@/components/promotionSection/PromotionDetailModal";
 
 const ManagePromotionsPage = () => {
   // State for promotions data
@@ -24,7 +26,7 @@ const ManagePromotionsPage = () => {
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -47,13 +49,13 @@ const ManagePromotionsPage = () => {
         
         // Fetch place data for each promotion
         const promotionsData = await Promise.all(
-          querySnapshot.docs.map(async (doc) => {
-            const promotionData = { id: doc.id, ...doc.data() };
+          querySnapshot.docs.map(async (docSnapshot) => {
+            const promotionData = { id: docSnapshot.id, ...docSnapshot.data() };
             
             // Fetch related place data
             if (promotionData.placeId) {
               try {
-                const placeSnap = await getDoc(doc(db, 'places', promotionData.placeId));
+                const placeSnap = await getDoc(doc(db, "places", promotionData.placeId));
                 if (placeSnap.exists()) {
                   promotionData.place = { id: placeSnap.id, ...placeSnap.data() };
                 }
@@ -83,6 +85,7 @@ const ManagePromotionsPage = () => {
         setFilteredPromotions(promotionsData);
       } catch (error) {
         console.error("Error fetching promotions:", error);
+        toast.error("Failed to fetch promotions");
       } finally {
         setIsLoading(false);
       }
@@ -145,9 +148,28 @@ const ManagePromotionsPage = () => {
       // Close any open modals
       setIsViewModalOpen(false);
       setIsEditModalOpen(false);
+      setIsDeleteModalOpen(false);
     } catch (error) {
       console.error("Error updating promotion status:", error);
       toast.error("Failed to update promotion status");
+    }
+  };
+
+  // Handle delete promotion
+  const handleDeletePromotion = async (promotionId) => {
+    try {
+      await deleteDoc(doc(db, "promotions", promotionId));
+      
+      const updatedPromotions = promotions.filter(
+        (promotion) => promotion.id !== promotionId
+      );
+      setPromotions(updatedPromotions);
+      setIsDeleteModalOpen(false);
+      
+      toast.success("Promotion deleted successfully");
+    } catch (error) {
+      console.error("Error deleting promotion:", error);
+      toast.error("Failed to delete promotion");
     }
   };
 
@@ -160,47 +182,24 @@ const ManagePromotionsPage = () => {
   // Open edit modal
   const openEditModal = (promotion) => {
     setSelectedPromotion(promotion);
-    setEditFormData({ ...promotion });
     setIsEditModalOpen(true);
   };
 
-  // Handle edit form changes
-  const handleEditFormChange = (e) => {
-    const { name, value } = e.target;
-    setEditFormData({
-      ...editFormData,
-      [name]: value,
-    });
+  // Open delete modal
+  const openDeleteModal = (promotion) => {
+    setSelectedPromotion(promotion);
+    setIsDeleteModalOpen(true);
   };
 
   // Handle edit form submission
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      setIsSubmitting(true);
-      const updatedData = {
-        description: editFormData.description,
-        phoneNumber: editFormData.contactPhone,
-        status: editFormData.status,
-      };
-      
-      const promotionDocRef = doc(db, "promotions", editFormData.id);
-      await updateDoc(promotionDocRef, updatedData);
-
-      const updatedPromotions = promotions.map((promotion) =>
-        promotion.id === editFormData.id ? { ...editFormData } : promotion
-      );
-
-      setPromotions(updatedPromotions);
-      setIsEditModalOpen(false);
-      toast.success(`Promotion ${editFormData.id} has been updated`);
-    } catch (error) {
-      console.error("Error updating promotion:", error);
-      toast.error("Failed to update promotion");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleEditSubmit = (data) => {
+    // Update local state
+    const updatedPromotions = promotions.map((promotion) =>
+      promotion.id === data.promotion.id ? { ...promotion, ...data.promotion } : promotion
+    );
+    setPromotions(updatedPromotions);
+    setIsEditModalOpen(false);
+    toast.success("Promotion updated successfully");
   };
 
   // Render status badge
@@ -505,7 +504,7 @@ const ManagePromotionsPage = () => {
                                 handleStatusChange(promotion.id, "active")
                               }
                               className="flex items-center space-x-1 text-green-600 hover:text-green-900"
-                              title="Activate"
+                              title="Approve"
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -521,7 +520,7 @@ const ManagePromotionsPage = () => {
                                   d="M5 13l4 4L19 7"
                                 />
                               </svg>
-                              <span>Activate</span>
+                              <span>Approve</span>
                             </button>
                           )}
 
@@ -582,6 +581,28 @@ const ManagePromotionsPage = () => {
                               </button>
                             )
                           )}
+
+                          <button
+                            onClick={() => openDeleteModal(promotion)}
+                            className="flex items-center space-x-1 text-red-600 hover:text-red-900"
+                            title="Delete"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                            <span>Delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -703,6 +724,28 @@ const ManagePromotionsPage = () => {
 
       {/* View Modal */}
       {isViewModalOpen && selectedPromotion && (
+        <PromotionDetailModal 
+          promotion={selectedPromotion} 
+          onClose={() => setIsViewModalOpen(false)} 
+        />
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && selectedPromotion && (
+        <AddPromotionModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          location={{ lat: selectedPromotion.place?.lat || 0, lng: selectedPromotion.place?.lng || 0 }}
+          restaurant={selectedPromotion.place}
+          mode="edit"
+          initialPromotion={selectedPromotion}
+          initialPlace={selectedPromotion.place}
+          onSubmit={handleEditSubmit}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && selectedPromotion && (
         <div className="fixed z-50 inset-0 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div
@@ -711,7 +754,7 @@ const ManagePromotionsPage = () => {
             >
               <div
                 className="absolute inset-0 bg-gray-500 opacity-75"
-                onClick={() => setIsViewModalOpen(false)}
+                onClick={() => setIsDeleteModalOpen(false)}
               ></div>
             </div>
 
@@ -725,339 +768,51 @@ const ManagePromotionsPage = () => {
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        {selectedPromotion.name}
-                      </h3>
-                      <div className="flex items-center">
-                        {renderStatusBadge(selectedPromotion.status)}
-                        <button
-                          onClick={() => setIsViewModalOpen(false)}
-                          className="ml-3 bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
-                        >
-                          <span className="sr-only">Close</span>
-                          <svg
-                            className="h-6 w-6"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="aspect-w-16 aspect-h-9 mb-4">
-                        <Image
-                          src={selectedPromotion.photos?.[0] || "/placeholder.svg"}
-                          alt={selectedPromotion.name}
-                          className="object-cover rounded-md"
-                          width={200}
-                          height={100}
-                        />
-                      </div>
-
-                      <div className="flex items-center text-sm text-gray-500 mb-4">
-                        <div className="flex items-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                          <span>
-                            Created: {formatDate(selectedPromotion.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-gray-500 mb-4">
-                        {selectedPromotion.description}
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg
+                      className="h-6 w-6 text-red-600"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Delete Promotion
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Are you sure you want to delete this promotion? This action cannot be undone.
                       </p>
-
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500">
-                            Contact Email
-                          </h4>
-                          <p className="mt-1 text-sm text-gray-900">
-                            {selectedPromotion.contactEmail}
-                          </p>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500">
-                            Contact Phone
-                          </h4>
-                          <p className="mt-1 text-sm text-gray-900">
-                            {selectedPromotion.contactPhone}
-                          </p>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500">
-                            Start Date
-                          </h4>
-                          <p className="mt-1 text-sm text-gray-900">
-                            {formatDateTime(selectedPromotion.startDateTime)}
-                          </p>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500">
-                            End Date
-                          </h4>
-                          <p className="mt-1 text-sm text-gray-900">
-                            {formatDateTime(selectedPromotion.endDateTime)}
-                          </p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                {selectedPromotion.status === "pending" && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleStatusChange(selectedPromotion.id, "active")
-                      }
-                      className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
-                    >
-                      Activate
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleStatusChange(selectedPromotion.id, "inactive")
-                      }
-                      className="mt-3 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                    >
-                      Deactivate
-                    </button>
-                  </>
-                )}
-
-                {selectedPromotion.status === "active" && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleStatusChange(selectedPromotion.id, "inactive")
-                    }
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Deactivate
-                  </button>
-                )}
-
-                {selectedPromotion.status === "inactive" && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleStatusChange(selectedPromotion.id, "active")
-                    }
-                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Activate
-                  </button>
-                )}
-
                 <button
                   type="button"
-                  onClick={() => openEditModal(selectedPromotion)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#206645] sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => handleDeletePromotion(selectedPromotion.id)}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
                 >
-                  Edit
+                  Delete
                 </button>
-
                 <button
                   type="button"
-                  onClick={() => setIsViewModalOpen(false)}
+                  onClick={() => setIsDeleteModalOpen(false)}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#206645] sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                 >
-                  Close
+                  Cancel
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {isEditModalOpen && editFormData && (
-        <div className="fixed z-50 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div
-              className="fixed inset-0 transition-opacity"
-              aria-hidden="true"
-            >
-              <div
-                className="absolute inset-0 bg-gray-500 opacity-75"
-                onClick={() => setIsEditModalOpen(false)}
-              ></div>
-            </div>
-
-            <span
-              className="hidden sm:inline-block sm:align-middle sm:h-screen"
-              aria-hidden="true"
-            >
-              &#8203;
-            </span>
-
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <form onSubmit={handleEditSubmit}>
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-lg leading-6 font-medium text-gray-900">
-                          Edit Promotion
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={() => setIsEditModalOpen(false)}
-                          className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
-                        >
-                          <span className="sr-only">Close</span>
-                          <svg
-                            className="h-6 w-6"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-
-                      <div className="mt-4 space-y-6">
-                        <div>
-                          <label
-                            htmlFor="description"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Description
-                          </label>
-                          <textarea
-                            id="description"
-                            name="description"
-                            rows={4}
-                            value={editFormData.description}
-                            onChange={handleEditFormChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#206645] focus:ring-[#206645]"
-                          />
-                        </div>
-
-                        <div>
-                          <label
-                            htmlFor="contactPhone"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Phone Number
-                          </label>
-                          <input
-                            type="text"
-                            name="contactPhone"
-                            id="contactPhone"
-                            value={editFormData.contactPhone}
-                            onChange={handleEditFormChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#206645] focus:ring-[#206645]"
-                          />
-                        </div>
-
-                        <div>
-                          <label
-                            htmlFor="status"
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Status
-                          </label>
-                          <select
-                            id="status"
-                            name="status"
-                            value={editFormData.status}
-                            onChange={handleEditFormChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#206645] focus:ring-[#206645]"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="expired">Expired</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`m-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-[#206645] text-white font-medium hover:bg-green focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#206645] sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm ${
-                      isSubmitting ? "opacity-75 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center">
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Saving...
-                      </span>
-                    ) : (
-                      "Save Changes"
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditModalOpen(false)}
-                    className="m-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#206645] sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
             </div>
           </div>
         </div>

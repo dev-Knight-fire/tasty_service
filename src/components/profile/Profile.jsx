@@ -645,7 +645,7 @@ const UserProfile = () => {
                                                 Edit
                                              </Link>
                                           </div>
-                                          <button
+                                          {/* <button
                                              onClick={() => handleTogglePromotionStatus(property.id, property.status)}
                                              className={`flex items-center px-3 py-1 rounded text-sm transition-colors ${
                                                 property.status === 'active' 
@@ -654,7 +654,7 @@ const UserProfile = () => {
                                              }`}
                                           >
                                              {property.status === 'active' ? 'Deactivate' : 'Activate'}
-                                          </button>
+                                          </button> */}
                                        </div>
                                     </div>
                                  </div>
