@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useLang } from "@/contexts/LangContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 /**
  * InfluencersGrid.jsx
@@ -30,7 +31,7 @@ import { useAuth } from "@/contexts/AuthContext";
  */
 
 const Influencers = () => {
-  const { messages } = useLang?.() || { messages: {} };
+  const { messages } = useLang();
   const controls = useAnimation();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, threshold: 0.2 });
@@ -43,6 +44,7 @@ const Influencers = () => {
   const [videoOpen, setVideoOpen] = useState(false);
   const [activeVideo, setActiveVideo] = useState(null);
   const { user } = useAuth();
+  const router = useRouter();
 
   // ---- Realistic influencer profiles (fictional people, real avatar images) ----
   const influencerProfiles = [
@@ -325,7 +327,7 @@ const Influencers = () => {
             }}
             className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4 text-[#206645] dark:text-green-400"
           >
-            What influencers recommend
+            {messages['influencersTitle']}
           </motion.h2>
 
           {userLocation && (
@@ -337,7 +339,7 @@ const Influencers = () => {
               className="text-lg text-gray-600 dark:text-gray-300 flex items-center justify-center gap-2 mb-6"
             >
               <MapPin className="h-5 w-5" />
-              Showing content near {userLocation.city}
+              {userLocation.city}
               {userLocation.country ? `, ${userLocation.country}` : ""}
             </motion.p>
           )}
@@ -362,7 +364,7 @@ const Influencers = () => {
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-gray-700/60"
               }`}
             >
-              <Clock className="w-4 h-4" /> Newest
+              <Clock className="w-4 h-4" /> {messages['newestTitle']}
             </button>
             <button
               role="tab"
@@ -374,7 +376,7 @@ const Influencers = () => {
                   : "text-gray-700 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-gray-700/60"
               }`}
             >
-              <MapPin className="w-4 h-4" /> Near me
+              <MapPin className="w-4 h-4" /> {messages['nearmeTitle']}
             </button>
           </motion.div>
         </motion.div>
@@ -476,14 +478,12 @@ const Influencers = () => {
                       <span>
                         {content.location.venue}, {content.location.city}
                       </span>
-                      <a
-                        href={`https://www.google.com/maps?q=${content.location.lat},${content.location.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => router.push(`/map/all?lat=${content.location.lat}&lng=${content.location.lng}`)}
                         className="underline decoration-dotted underline-offset-4 hover:text-[#206645]"
                       >
-                        Open map
-                      </a>
+                        {messages['placeonmapTitle']}
+                      </button>
                     </div>
                   )}
 
@@ -537,7 +537,7 @@ const Influencers = () => {
                           {content.influencer.name}
                         </div>
                         <div className="text-gray-500 dark:text-gray-300 text-xs">
-                          {content.influencer.email} • {content.influencer.followers} followers
+                          {content.influencer.email} • {content.influencer.followers} {messages['followersTitle']}
                         </div>
                       </div>
                     </div>
@@ -551,7 +551,7 @@ const Influencers = () => {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-4 py-2 bg-[#206645] hover:bg-[#1a5237] text-white font-medium rounded-lg transition-colors duration-300 text-sm"
                     >
-                      <ExternalLink className="w-4 h-4" /> View at creator
+                      <ExternalLink className="w-4 h-4" /> {messages['viewcreatorTitle']}
                     </a>
                     {content.type === "video" && content.videoUrl && (
                       <button

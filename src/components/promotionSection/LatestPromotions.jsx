@@ -255,7 +255,7 @@ const LatestPromotions = () => {
               }}
               className="text-3xl sm:text-4xl font-bold mb-6 text-[#206645] dark:text-green-400"
             >
-              Promotions near you Today
+              {messages['nearpromotionsTitle']}
             </motion.h2>
             
             {userLocation && (
@@ -360,7 +360,7 @@ const LatestPromotions = () => {
 
                       {/* Click hint */}
                       <div className="mt-4 text-xs text-gray-400 text-center">
-                        Click to view details
+                        {messages['clickviewdetailTitle']}
                       </div>
                     </div>
                   </motion.div>
@@ -375,8 +375,8 @@ const LatestPromotions = () => {
                 >
                   <div className="text-gray-500 dark:text-gray-400">
                     <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-xl font-medium mb-2">No promotions nearby</h3>
-                    <p>There are currently no active promotions within 2km of your location.</p>
+                    <h3 className="text-xl font-medium mb-2">{messages['nonearpromotionsTitle']}</h3>
+                    <p>{messages['nonearpromotionsContent']}</p>
                   </div>
                 </motion.div>
               )}

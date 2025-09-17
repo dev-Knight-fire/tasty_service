@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import ReviewDetailModal from "./ReviewDetailModal";
+import { useLang } from "@/contexts/LangContext";
 
 /**
  * LatestReviews.jsx
@@ -33,6 +34,7 @@ const SKELETON_COUNT = 6;
 const LatestReviews = () => {
   const { user } = useAuth();
   const router = useRouter();
+  const { messages } = useLang();
 
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -213,13 +215,13 @@ const LatestReviews = () => {
   return (
     <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6">
       <header className="flex items-center justify-between mb-5">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Latest Reviews</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{messages['homeserviceTitle1']}</h3>
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push("/map/all")}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
           >
-            <FaPlus className="w-4 h-4" /> Add Review
+            <FaPlus className="w-4 h-4" /> {messages['addreviewTitle']}
           </button>
         </div>
       </header>
@@ -269,12 +271,12 @@ const LatestReviews = () => {
       {!loading && !error && reviews.length === 0 && (
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
           <FaCamera className="w-12 h-12 mx-auto mb-4 opacity-60" />
-          <p className="mb-6">No reviews yet. Be the first to share your experience!</p>
+          <p className="mb-6">{messages[reviewemptyTitle]}</p>
           <button
             onClick={() => router.push("/map/all")}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
           >
-            <FaPlus className="w-4 h-4" /> Add Review
+            <FaPlus className="w-4 h-4" /> {messages[addreviewTitle]}
           </button>
         </div>
       )}

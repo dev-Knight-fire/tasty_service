@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
 import { FaTimes, FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPhone, FaExternalLinkAlt } from 'react-icons/fa';
+import { useLang } from '@/contexts/LangContext';
 
 const PromotionDetailModal = ({ promotion, onClose }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const router = useRouter();
+  const { messages } = useLang();
 
   if (!promotion) return null;
 
@@ -143,7 +145,7 @@ const PromotionDetailModal = ({ promotion, onClose }) => {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">
-                    Promotion Details
+                    {messages['promotiondetailsTitle']}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                     {promotion.description}
@@ -169,7 +171,7 @@ const PromotionDetailModal = ({ promotion, onClose }) => {
               <div className="space-y-4">
                 <div className="bg-white dark:bg-gray-600 rounded-lg p-4">
                   <h4 className="font-semibold text-gray-800 dark:text-white mb-3">
-                    Time Information
+                    {messages['timeinformationTitle']}
                   </h4>
                   
                   <div className="space-y-3">
@@ -202,16 +204,16 @@ const PromotionDetailModal = ({ promotion, onClose }) => {
           {/* Place Information */}
           <div className="bg-white dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
             <h4 className="font-semibold text-gray-800 dark:text-white mb-3">
-              Place Information
+              {messages['placeinformationTitle']}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
               <div>
-                <span className="font-medium">Coordinates:</span><br />
+                <span className="font-medium">{messages['coordinatesTitle']}:</span><br />
                 Lat: {promotion.place.lat?.toFixed(6)}<br />
                 Lng: {promotion.place.lng?.toFixed(6)}
               </div>
               <div>
-                <span className="font-medium">Added:</span><br />
+                <span className="font-medium">{messages['addedTitle']}:</span><br />
                 {formatDate(promotion.place.createdAt)}
               </div>
             </div>
@@ -224,14 +226,14 @@ const PromotionDetailModal = ({ promotion, onClose }) => {
               className="flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <FaMapMarkerAlt className="w-4 h-4" />
-              <span>Place on Map</span>
+              <span>{messages['placeonmapTitle']}</span>
             </button>
             
             <button
               onClick={onClose}
               className="flex items-center justify-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
-              <span>Close</span>
+              <span>{messages['closeTitle']}</span>
             </button>
           </div>
         </div>

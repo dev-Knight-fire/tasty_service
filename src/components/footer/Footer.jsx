@@ -161,7 +161,7 @@ const Footer = () => {
                   scroll={true}
                 >
                   <Heart className="mr-2 h-4 w-4" />
-                  {messages["latestreviewsTitle"] || "Latest Reviews"}
+                  {messages["homeserviceTitle1"] || "Latest Reviews"}
                 </Link>
               </li>
               <li>
@@ -171,7 +171,7 @@ const Footer = () => {
                   scroll={true}
                 >
                   <ShoppingBasket className="mr-2 h-4 w-4" />
-                  {messages["latestpromotionsTitle"] || "Promotions"}
+                  {messages["promotionsTitle"] || "Promotions"}
                 </Link>
               </li>
             </ul>

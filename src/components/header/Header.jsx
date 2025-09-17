@@ -139,7 +139,7 @@ const Header = () => {
                     >
                       <Key size={16} className="text-[#0077C8]" />
                       <span>
-                        Change Password
+                        {messages['changepasswordTitle']}
                       </span>
                     </Link>
 

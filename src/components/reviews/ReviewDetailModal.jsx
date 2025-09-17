@@ -2,9 +2,11 @@
 import React from 'react';
 import { FaTimes, FaStar, FaMapMarkerAlt, FaCalendarAlt, FaUtensils, FaMap } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
+import { useLang } from '@/contexts/LangContext';
 
 const ReviewDetailModal = ({ review, isOpen, onClose }) => {
   const router = useRouter();
+  const { messages } = useLang();
 
   if (!isOpen || !review) return null;
 
@@ -77,7 +79,7 @@ const ReviewDetailModal = ({ review, isOpen, onClose }) => {
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center space-x-2">
             <FaStar className="text-yellow-500" />
-            <span>Review Details</span>
+            <span>{messages['reviewdetailsTitle']}</span>
           </h2>
           <button
             onClick={onClose}
@@ -93,21 +95,21 @@ const ReviewDetailModal = ({ review, isOpen, onClose }) => {
             <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
               <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center space-x-2">
                 <FaUtensils className="text-red-600" />
-                <span>Place Information</span>
+                <span>{messages['placeinformationTitle']}</span>
               </h4>
               <div className="space-y-2">
                 <p className="text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">Name:</span> {review.place.venueName}
+                  <span className="font-medium">{messages['nameTitle']}:</span> {review.place.venueName}
                 </p>
                 {review.place.lat && review.place.lng && (
                   <p className="text-gray-700 dark:text-gray-300">
-                    <span className="font-medium">Location:</span> 
+                    <span className="font-medium">{messages['locationTitle']}:</span> 
                     Lat: {review.place.lat.toFixed(6)}, Lng: {review.place.lng.toFixed(6)}
                   </p>
                 )}
                 {review.place.createdAt && (
                   <p className="text-gray-700 dark:text-gray-300">
-                    <span className="font-medium">Added:</span> {formatFullDate(review.place.createdAt)}
+                    <span className="font-medium">{messages['addedTitle']}:</span> {formatFullDate(review.place.createdAt)}
                   </p>
                 )}
               </div>
@@ -120,7 +122,7 @@ const ReviewDetailModal = ({ review, isOpen, onClose }) => {
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
                   >
                     <FaMap className="w-4 h-4" />
-                    <span>Browse to Map</span>
+                    <span>{messages['browseplaceTitle']}</span>
                   </button>
                 </div>
               )}
@@ -129,7 +131,7 @@ const ReviewDetailModal = ({ review, isOpen, onClose }) => {
             <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
               <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center space-x-2">
                 <FaUtensils className="text-red-600" />
-                <span>Place Information</span>
+                <span>{messages['placeinformationTitle']}</span>
               </h4>
               <p className="text-gray-700 dark:text-gray-300">
                 Place information not available. 
@@ -165,7 +167,7 @@ const ReviewDetailModal = ({ review, isOpen, onClose }) => {
 
           {/* Overall Rating */}
           <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-            <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Overall Rating</h4>
+            <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">{messages['overallratingTitle']}</h4>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 {renderModalStars(getAverageRating(review.ratings))}
@@ -178,26 +180,26 @@ const ReviewDetailModal = ({ review, isOpen, onClose }) => {
 
           {/* Individual Ratings */}
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-            <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Detailed Ratings</h4>
+            <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{messages['detailedratingsTitle']}</h4>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center">
-                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Food</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">{messages['foodTitle']}</div>
                 {renderModalStars(review.ratings.food)}
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Cleanliness</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">{messages['cleanlinessTitle']}</div>
                 {renderModalStars(review.ratings.cleanliness)}
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Service</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">{messages['serviceTitle']}</div>
                 {renderModalStars(review.ratings.service)}
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Value</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">{messages['valueTitle']}</div>
                 {renderModalStars(review.ratings.valueForMoney)}
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Would Return</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">{messages['wouldreturnTitle']}</div>
                 {renderModalStars(review.ratings.wouldReturn)}
               </div>
             </div>
@@ -206,7 +208,7 @@ const ReviewDetailModal = ({ review, isOpen, onClose }) => {
           {/* Comment */}
           {review.comment && (
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-              <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Comment</h4>
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">{messages['commentTitle']}</h4>
               <p className="text-gray-700 dark:text-gray-300">{review.comment}</p>
             </div>
           )}
@@ -214,7 +216,7 @@ const ReviewDetailModal = ({ review, isOpen, onClose }) => {
           {/* Photos */}
           {review.photos && review.photos.length > 0 && (
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-              <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Photos</h4>
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">{messages['photosLabel']}</h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {review.photos.map((photo, index) => (
                   <img
@@ -231,7 +233,7 @@ const ReviewDetailModal = ({ review, isOpen, onClose }) => {
           {/* Visit Date */}
           {review.visitDate && (
             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-              <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">Visit Date</h4>
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">{messages['visitdateTitle']}</h4>
               <p className="text-gray-700 dark:text-gray-300">
                 {review.visitDate.toDate ? 
                   review.visitDate.toDate().toLocaleDateString() : 
