@@ -24,7 +24,6 @@ export default function ContactUs() {
     lastName: "",
     email: "",
     phone: "",
-    inquiryType: "",
     message: "",
     consent: false,
   });
@@ -54,7 +53,6 @@ export default function ContactUs() {
     if (!form.email) errs.email = "Email is required.";
     else if (!/\S+@\S+\.\S+/.test(form.email))
       errs.email = "Please enter a valid email.";
-    if (!form.inquiryType) errs.inquiryType = "Please select an inquiry type.";
     if (!form.message.trim()) errs.message = "Message cannot be empty.";
     if (!form.consent) errs.consent = "Consent is required.";
     return errs;
@@ -103,7 +101,6 @@ export default function ContactUs() {
         lastName: "",
         email: "",
         phone: "",
-        inquiryType: "",
         message: "",
         consent: false,
       });
@@ -154,9 +151,9 @@ export default function ContactUs() {
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-white to-[#f3f3ef] border-b">
         <div className="container mx-auto px-4 py-12 md:py-20">
-          <div className="max-w-2xl mx-auto text-center">
+          <div className="max-w-3xl mx-auto text-center">
             <span className="inline-flex items-center mb-4">
-              <Leaf className="w-9 h-9 text-[#2c6d3c]" />
+              <Image src="/tastyservice_sygnet.png" alt="image" width={60} height={60} />
             </span>
             <h1 className="text-4xl md:text-5xl font-bold text-[#2c6d3c] mb-3">
               {messages["contactusmainTitle"]}
@@ -164,9 +161,9 @@ export default function ContactUs() {
             <p className="text-lg md:text-xl text-[#68543a] mb-4">
               {messages["contactusmainContent"]}
             </p>
-            <p className="text-base text-[#68543a]">
+            {/* <p className="text-base text-[#68543a]">
               {messages["contactussubContent"]}
-            </p>
+            </p> */}
           </div>
         </div>
       </div>
@@ -300,28 +297,6 @@ export default function ContactUs() {
                   className="w-full px-4 py-3 rounded-lg border border-[#c2c2b6] bg-[#f9faf6] text-[#2c6d3c] focus:ring-2 focus:ring-[#2c6d3c] focus:bg-white"
                   placeholder="+40 712 345 678"
                 />
-              </div>
-              <div>
-                <label htmlFor="inquiryType" className="block text-sm font-medium text-[#68543a] mb-1">
-                  {messages['typeofinquiryLabel']}
-                </label>
-                <select
-                  id="inquiryType"
-                  name="inquiryType"
-                  value={form.inquiryType}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-[#c2c2b6] bg-[#f9faf6] text-[#2c6d3c] focus:ring-2 focus:ring-[#2c6d3c] focus:bg-white"
-                  required
-                >
-                  <option value="">{messages['messageboxcategoryPlaceholder']}</option>
-                  <option value="new_place">{messages['messageboxcategoryoption1']}</option>
-                  <option value="partnership">{messages['messageboxcategoryoption2']}</option>
-                  <option value="press">{messages['messageboxcategoryoption3']}</option>
-                  <option value="support">{messages['messageboxcategoryoption4']}</option>
-                  <option value="feedback">{messages['messageboxcategoryoption5']}</option>
-                  <option value="other">{messages['messageboxcategoryoption6']}</option>
-                </select>
-                {renderError("inquiryType")}
               </div>
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-[#68543a] mb-1">

@@ -32,11 +32,6 @@ const Nav = () => {
         {messages['aboutusTitle']}
       </NavLink>
 
-      <NavLink path="/services">
-        <FaCogs size={iconSize} className="inline mr-2 align-middle" />
-        {messages['termsofuseTitle']}
-      </NavLink>
-
       <NavLink path="/faq">
         <FaQuestionCircle size={iconSize} className="inline mr-2 align-middle" />
         FAQ

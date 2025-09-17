@@ -4,8 +4,8 @@
   "aboutusTitle": "O nas",
   "termsofuseTitle": "Warunki użytkowania",
   "contactusTitle": "Skontaktuj się z nami",
-  "contactusmainTitle": "Skontaktuj się z Plantilo",
-  "contactusmainContent": "Plantilo to przestrzeń dla świadomych osób, które rozumieją wpływ codziennych wyborów. Nie oczekujemy heroizmu – wystarczy uważność przy zakupach, naprawianiu tego, co się zepsuło, czy rozpoczęciu kompostowania.",
+  "contactusmainTitle": "Skontaktuj się z TastyService",
+  "contactusmainContent": "TastyService to platforma dla miłośników jedzenia, właścicieli restauracji oraz wszystkich ciekawych wyjątkowych doznań kulinarnych. Masz pytanie, sugestię lub po prostu chcesz się z nami skontaktować? Z przyjemnością Cię wysłuchamy!",
   "signinTitle": "Zaloguj się",
   "signupTitle": "Zarejestruj się",
   "signasLabel": "Zalogowany jako",
@@ -411,32 +411,32 @@
   "faqTitle": "Często zadawane pytania",
   "faq": [
     [
-      "Czym jest SeniorLink.me?",
-      "SeniorLink.me to serwis, który pomaga łączyć seniorów i ich rodziny z domami opieki, opiekunami, firmami transportowymi, sklepami przyjaznymi seniorom oraz organizacjami wsparcia. To prosta wyszukiwarka i katalog usług przyjaznych seniorom."
+      "Czym jest TastyService?",
+      "TastyService to platforma, która pomaga odkrywać niesamowite kulinarne doświadczenia, autentyczne recenzje restauracji oraz promocje w czasie rzeczywistym. Niezależnie od tego, czy szukasz szybkiej przekąski, wykwintnej kolacji czy inspiracji kulinarnych, TastyService łączy Cię z najlepszymi lokalami w okolicy."
     ],
     [
-      "Dla kogo jest ten serwis?",
-      "Dla seniorów i ich rodzin, opiekunów szukających zaufanych usług, domów opieki, opiekunów, placówek medycznych, sklepów oraz organizacji, które chcą być łatwo odnalezione przez osoby poszukujące opieki dla seniorów."
+      "Kto może korzystać z TastyService?",
+      "TastyService jest dla każdego, kto kocha jedzenie! Niezależnie czy jesteś smakoszem, zwykłym gościem, właścicielem restauracji czy po prostu szukasz nowych miejsc do jedzenia, TastyService pomoże Ci znaleźć i dzielić się świetnymi kulinarnymi doświadczeniami."
     ],
     [
-      "Co mogę tutaj znaleźć?",
-      "Znajdziesz tu domy opieki i placówki całodobowe, opiekunów oraz usługi pomocy domowej, transport medyczny i codzienny, sklepy z produktami dla seniorów, instytucje publiczne i NGO wspierające seniorów, oferty pracy i ogłoszenia z branży opiekuńczej (wkrótce)."
+      "Co mogę znaleźć na TastyService?",
+      "Znajdziesz tu szeroki wybór restauracji, kawiarni, street foodu, miejsc z deserami i wiele więcej. Przeglądaj autentyczne recenzje, odkrywaj aktualne promocje i eksploruj kategorie jedzenia, by znaleźć swoje nowe ulubione miejsce."
     ],
     [
-      "Czy korzystanie z SeniorLink.me jest darmowe?",
-      "Tak. Obecnie korzystanie z serwisu jest całkowicie bezpłatne – zarówno dla użytkowników, jak i dla firm dodających swoje profile. Skupiamy się teraz na budowaniu społeczności i rozbudowie bazy miejsc."
+      "Czy korzystanie z TastyService jest darmowe?",
+      "Tak! TastyService jest całkowicie darmowy dla wszystkich. Możesz przeglądać ogłoszenia, czytać recenzje i odkrywać promocje bez żadnych opłat. Właściciele restauracji również mogą dodać swój lokal za darmo."
     ],
     [
-      "Czy mogę dodać swoją firmę lub organizację?",
-      "Tak! Jeśli prowadzisz domy opieki, jesteś opiekunem, sprzedajesz produkty lub oferujesz usługi dla seniorów – możesz dodać swój profil za darmo. Wystarczy założyć konto i uzupełnić informacje."
+      "Jak dodać swoją restaurację lub firmę gastronomiczną?",
+      "Wystarczy założyć darmowe konto i uzupełnić dane swojej firmy. Dodaj zdjęcia, opisy i specjalne oferty, aby przyciągnąć więcej klientów. Twoje ogłoszenie pojawi się na TastyService, by miłośnicy jedzenia mogli je odkryć."
     ],
     [
-      "Kto stoi za tym projektem?",
-      "SeniorLink.me to niezależna inicjatywa stworzona, aby poprawić dostęp do opieki i usług dla seniorów. Nie jesteśmy powiązani z żadną instytucją państwową ani dużą korporacją."
+      "Kto prowadzi TastyService?",
+      "TastyService jest zarządzany przez zespół pasjonatów, którzy chcą łączyć ludzi z wyjątkowymi kulinarnymi doświadczeniami. Działamy niezależnie i wspieramy zarówno gości, jak i lokalne firmy gastronomiczne."
     ],
     [
-      "Jakie są plany rozwoju?",
-      "Pracujemy nad funkcjami opinii i ocen użytkowników, filtrowaniem według potrzeb (np. demencja, dieta), bezpośrednim kontaktem z opiekunami lub domami opieki, sekcją wiedzy i porad dla rodzin."
+      "Jakie nowe funkcje pojawią się wkrótce w TastyService?",
+      "Pracujemy nad nowymi funkcjami, takimi jak recenzje użytkowników, spersonalizowane rekomendacje, lista wydarzeń i więcej sposobów na integrację społeczności kulinarnej. Masz sugestie lub chcesz współpracować? Daj nam znać — uwielbiamy słuchać naszych użytkowników!"
     ]
   ],
   "entrytypeError": "Proszę wybrać typ wpisu",
