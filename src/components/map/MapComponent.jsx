@@ -628,7 +628,7 @@ export default function MapComponent({ category }) {
     if (debouncedSearchQuery.trim() && !preventSearch) {
       handleSearch();
     }
-  }, [debouncedSearchQuery, preventSearch]);
+  }, [debouncedSearchQuery]);
 
   return (
     <div className="map-wrap relative w-full h-screen">
