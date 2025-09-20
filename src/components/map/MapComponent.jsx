@@ -601,7 +601,7 @@ export default function MapComponent({ category }) {
     // Clear search results immediately
     setSearchResults([]);
     // Set flag to prevent search
-    setPreventSearch(true);
+    // setPreventSearch(false);
     // Update search query
     setSearchQuery(result.place_name);
     // Reset flag after a short delay
@@ -628,7 +628,7 @@ export default function MapComponent({ category }) {
     if (debouncedSearchQuery.trim() && !preventSearch) {
       handleSearch();
     }
-  });
+  }, [preventSearch]);
 
   return (
     <div className="map-wrap relative w-full h-screen">
