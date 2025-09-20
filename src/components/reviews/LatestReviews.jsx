@@ -53,7 +53,7 @@ const LatestReviews = () => {
 
         const reviewsQ = query(
           collection(db, "reviews"),
-          where("status", "==", "approved"),
+          // where("status", "==", "approved"),
           orderBy("createdAt", "desc"),
           limit(6)
         );

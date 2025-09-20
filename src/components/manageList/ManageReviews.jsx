@@ -310,7 +310,7 @@ const ManageReviewsPage = () => {
                             <span>Edit</span>
                           </button>
 
-                          {r.status === "pending" && (
+                          {/* {r.status === "pending" && (
                             <button onClick={() => handleStatusChange(r.id, "approved")} className="flex items-center space-x-1 text-green-600 hover:text-green-900" title="Approve">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -336,7 +336,7 @@ const ManageReviewsPage = () => {
                                 <span>Unhide</span>
                               </button>
                             )
-                          )}
+                          )} */}
 
                           <button onClick={() => openDeleteModal(r)} className="flex items-center space-x-1 text-red-600 hover:text-red-900" title="Delete">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
