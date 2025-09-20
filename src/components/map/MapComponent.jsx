@@ -39,6 +39,7 @@ export default function MapComponent({ category }) {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [preventSearch, setPreventSearch] = useState(false); // Flag to prevent search when result is clicked
   const [services, setServices] = useState([]);
   const [places, setPlaces] = useState([]); // State for places
   const [loading, setLoading] = useState(false);
@@ -596,8 +597,15 @@ export default function MapComponent({ category }) {
       zoom: 16,
       essential: true
     });
+    
+    // Clear search results immediately
     setSearchResults([]);
+    // Set flag to prevent search
+    setPreventSearch(true);
+    // Update search query
     setSearchQuery(result.place_name);
+    // Reset flag after a short delay
+    setTimeout(() => setPreventSearch(false), 100);
   };
 
   const handleKeyPress = (e) => {
@@ -617,10 +625,10 @@ export default function MapComponent({ category }) {
 
   // Trigger search when debounced query changes
   useEffect(() => {
-    if (debouncedSearchQuery.trim()) {
+    if (debouncedSearchQuery.trim() && !preventSearch) {
       handleSearch();
     }
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, preventSearch]);
 
   return (
     <div className="map-wrap relative w-full h-screen">
